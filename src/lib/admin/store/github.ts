@@ -11,12 +11,14 @@ import type { ContentStore } from './types';
  * La branche dépend de qui enregistre (voir store/index.ts) : la branche de sa
  * proposition (elle sera relue), ou `main` pour une publication directe.
  *
- * Appels utilisés (API « Git Database », la seule qui sait faire un commit de plusieurs fichiers) :
+ * Appels utilisés :
  *  - GET   /branches/<branche>                le dernier commit de la branche ;
  *  - GET   /git/trees/<sha>?recursive=1       tous les fichiers, avec leur empreinte git (sha) ;
  *  - GET   /git/blobs/<sha>                   le contenu d'un fichier ;
- *  - POST  /git/blobs, /git/trees, /git/commits, puis PATCH /git/refs/heads/<branche>.
- * Doc : https://docs.github.com/fr/rest/git
+ *  - PUT ou DELETE /contents/<chemin>         un commit d'UN fichier, en un seul appel (le cas courant) ;
+ *  - POST  /git/blobs, /git/trees, /git/commits, puis PATCH /git/refs/heads/<branche> : l'API
+ *    « Git Database », la seule qui sait faire un commit de plusieurs fichiers.
+ * Doc : https://docs.github.com/fr/rest/repos/contents et https://docs.github.com/fr/rest/git
  *
  * Chaque appel à GitHub prend un quart de seconde ou plus, et ils se suivent : c'est ce qui rend
  * une action lente. Ce fichier en fait donc le moins possible, grâce à la « photo » d'une branche
@@ -135,12 +137,20 @@ export async function resetBranch(github: GitHub, branch: string, from: string):
 	keep(branch, base);
 }
 
-interface TreeEntry {
+/** Un changement prêt à partir. */
+interface Planned {
 	path: string;
-	mode: '100644';
-	type: 'blob';
-	sha?: string | null;
-	content?: string;
+	/** Empreinte du fichier après le commit ; `null` = suppression. */
+	sha: string | null;
+	/** Contenu à écrire. Absent pour une suppression, et pour un fichier déplacé tel quel (il garde son empreinte). */
+	bytes?: Buffer;
+	/** Le même contenu en texte, quand c'en est un. */
+	text?: string;
+}
+
+/** Ce que GitHub renvoie après un commit fait par `/contents`. */
+interface ContentsCommit {
+	commit: { sha: string; tree: { sha: string }; parents: { sha: string }[] };
 }
 
 export function createGitHubStore(github: GitHub, branch: string, options: { trailer?: string } = {}): ContentStore {
@@ -157,6 +167,38 @@ export function createGitHubStore(github: GitHub, branch: string, options: { tra
 		const text = (await fetchBlob(sha)).toString('utf8');
 		remember(sha, text);
 		return text;
+	}
+
+	/**
+	 * Un seul fichier écrit ou supprimé (corriger un texte, créer une page, envoyer une image, ranger le
+	 * menu) : l'API `/contents` fait le commit en UN appel. `sha` est l'empreinte du fichier remplacé :
+	 * GitHub refuse s'il a changé entre-temps. Renvoie la nouvelle photo, ou `null` si la branche avait
+	 * avancé par ailleurs (d'autres fichiers ont bougé : la photo sera redemandée).
+	 */
+	async function commitOne(change: Planned, current: Snapshot, body: Record<string, unknown>): Promise<Snapshot | null> {
+		const url = `/contents/${change.path.split('/').map(encodeURIComponent).join('/')}`;
+		const request = { ...body, branch, sha: current.files.get(change.path) };
+		const { commit } = change.bytes
+			? await github.put<ContentsCommit>(url, { ...request, content: change.bytes.toString('base64') })
+			: await github.delete<ContentsCommit>(url, request);
+		return commit.parents[0]?.sha === current.head ? { head: commit.sha, tree: commit.tree.sha, files: current.files } : null;
+	}
+
+	/** Plusieurs fichiers d'un coup (déplacer, renommer, supprimer un dossier) : arbre, commit, puis branche. */
+	async function commitMany(changes: Planned[], current: Snapshot, body: Record<string, unknown>): Promise<Snapshot> {
+		const entries = await Promise.all(
+			changes.map(async ({ path, sha, bytes, text }) => {
+				if (text !== undefined) return { path, mode: '100644', type: 'blob', content: text };
+				// Une image ne peut pas voyager en texte dans l'arbre : elle est envoyée à part.
+				const blob = bytes && (await github.post<{ sha: string }>('/git/blobs', { content: bytes.toString('base64'), encoding: 'base64' }));
+				return { path, mode: '100644', type: 'blob', sha: blob ? blob.sha : sha };
+			}),
+		);
+		const tree = await github.post<{ sha: string }>('/git/trees', { base_tree: current.tree, tree: entries });
+		const commit = await github.post<{ sha: string }>('/git/commits', { ...body, tree: tree.sha, parents: [current.head] });
+		// `force: false` : GitHub refuse si la branche a avancé depuis la photo.
+		await github.patch(`/git/refs/heads/${refOf(branch)}`, { sha: commit.sha, force: false });
+		return { head: commit.sha, tree: tree.sha, files: current.files };
 	}
 
 	return {
@@ -177,17 +219,10 @@ export function createGitHubStore(github: GitHub, branch: string, options: { tra
 		},
 
 		async commit(changes, { author, message }) {
-			// La photo peut avoir quelques secondes. Sans danger : si la branche a bougé depuis,
-			// GitHub refuse le commit (`force: false` plus bas) et personne n'écrase personne.
+			// La photo peut avoir quelques secondes. Sans danger : si ce qu'elle décrit a bougé depuis,
+			// GitHub refuse le commit et personne n'écrase personne.
 			const current = await snapshotOf(github, branch);
-			const next = new Map(current.files);
-			const entries: TreeEntry[] = [];
-			/** Note un changement : dans le commit à envoyer, et dans la photo d'après. */
-			const put = (path: string, sha: string | null, content?: string) => {
-				entries.push({ path, mode: '100644', type: 'blob', ...(content === undefined ? { sha } : { content }) });
-				if (sha === null) next.delete(path);
-				else next.set(path, sha);
-			};
+			const planned: Planned[] = [];
 
 			for (const change of changes) {
 				const path = checked(change.path);
@@ -196,49 +231,49 @@ export function createGitHubStore(github: GitHub, branch: string, options: { tra
 				const sha = current.files.get(from ?? path);
 
 				if (change.content === null) {
-					if (sha) put(path, null);
+					if (sha) planned.push({ path, sha: null });
 					continue;
 				}
 				if (from && !sha) throw new AdminError(409, CONFLICT); // le fichier à déplacer a disparu
-				if (from) put(from, null);
+				if (from) planned.push({ path: from, sha: null });
 
 				// Déplacement seul : le fichier garde son contenu, donc son empreinte.
 				if (change.content === undefined) {
-					if (sha) put(path, sha);
+					if (sha) planned.push({ path, sha });
 					continue;
 				}
 
 				const bytes = Buffer.from(change.content);
 				const newSha = blobSha(bytes);
 				if (!from && sha === newSha) continue; // contenu identique : pas d'écriture inutile
-
-				if (typeof change.content === 'string') {
-					remember(newSha, change.content);
-					put(path, newSha, change.content);
-				} else {
-					// Une image ne peut pas voyager en texte dans l'arbre : elle est envoyée à part.
-					const blob = await github.post<{ sha: string }>('/git/blobs', {
-						content: bytes.toString('base64'),
-						encoding: 'base64',
-					});
-					put(path, blob.sha);
-				}
+				const text = typeof change.content === 'string' ? change.content : undefined;
+				if (text !== undefined) remember(newSha, text);
+				planned.push({ path, sha: newSha, bytes, text });
 			}
-			if (entries.length === 0) return;
+			if (planned.length === 0) return;
 
+			const body = {
+				message: options.trailer ? `${message}\n\n${options.trailer}` : message,
+				// L'adresse « noreply » de la personne (voir github-oauth.ts) : sa vraie adresse n'entre pas dans
+				// l'historique public. Sans adresse, GitHub signe avec le compte du jeton : le même compte.
+				...(author.email ? { author: { ...author, date: new Date().toISOString() }, committer: author } : {}),
+			};
 			try {
-				const tree = await github.post<{ sha: string }>('/git/trees', { base_tree: current.tree, tree: entries });
-				const commit = await github.post<{ sha: string }>('/git/commits', {
-					message: options.trailer ? `${message}\n\n${options.trailer}` : message,
-					tree: tree.sha,
-					parents: [current.head],
-					// Sans adresse e-mail, GitHub signe avec le compte du jeton : le même compte.
-					author: author.email ? { ...author, date: new Date().toISOString() } : undefined,
-				});
-				// `force: false` : GitHub refuse si la branche a avancé depuis la photo.
-				await github.patch(`/git/refs/heads/${refOf(branch)}`, { sha: commit.sha, force: false });
+				const [only] = planned;
+				const single = planned.length === 1 && (only.sha === null || only.bytes !== undefined);
+				const done = single ? await commitOne(only, current, body) : await commitMany(planned, current, body);
+				if (!done) {
+					forgetBranch(branch);
+					return;
+				}
+
 				// La branche est maintenant exactement ceci : rafraîchir l'arbre ne redemandera rien.
-				keep(branch, { head: commit.sha, tree: tree.sha, files: next });
+				const next = new Map(current.files);
+				for (const { path, sha } of planned) {
+					if (sha === null) next.delete(path);
+					else next.set(path, sha);
+				}
+				keep(branch, { ...done, files: next });
 			} catch (error) {
 				forgetBranch(branch); // refusé : la photo n'est plus fiable
 				if (error instanceof GitHubError && (error.status === 409 || error.status === 422)) {

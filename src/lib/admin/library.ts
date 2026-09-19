@@ -188,10 +188,13 @@ export const saveCourse = (input: SaveCourseInput, { store, author }: Editor) =>
 export const deleteCourse = (id: string, { store, author }: Editor) =>
 	exclusive(async () => {
 		if (!isValidCourseId(id)) throw new AdminError(400, 'Identifiant de page invalide.');
+		// Lu avant `loadMenu`, qui ajoute au menu les pages absentes du fichier (toute page récente, voir
+		// saveCourse) : une telle page se supprime sans toucher au menu. Un seul fichier change.
+		const listed = findNode(parseMenu(await store.read(MENU_FILE)), id) !== null;
 		const menu = await loadMenu(store);
 		const node = removeNode(menu, id);
 		if (node?.type !== 'course') throw new AdminError(404, 'Page introuvable.');
-		await store.commit([{ path: courseFilePath(id), content: null }, menuChange(menu)], {
+		await store.commit([{ path: courseFilePath(id), content: null }, ...(listed ? [menuChange(menu)] : [])], {
 			author,
 			message: `Supprime la page « ${node.title} »`,
 		});

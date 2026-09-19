@@ -60,7 +60,7 @@ export function createGitHub(token: string) {
 		post: <T>(path: string, body: unknown) => call<T>('POST', repo(path), body),
 		patch: <T>(path: string, body: unknown) => call<T>('PATCH', repo(path), body),
 		put: <T>(path: string, body: unknown) => call<T>('PUT', repo(path), body),
-		delete: (path: string) => call<void>('DELETE', repo(path)),
+		delete: <T = void>(path: string, body?: unknown) => call<T>('DELETE', repo(path), body),
 		/** Route hors du dépôt, par exemple `/user`. */
 		getGlobal: <T>(path: string) => call<T>('GET', `${GITHUB_API_URL}${path}`),
 		/** API GraphQL : certaines actions (la fusion automatique) n'existent que là. */
