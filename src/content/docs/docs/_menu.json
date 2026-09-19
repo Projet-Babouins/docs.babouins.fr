@@ -19,11 +19,6 @@
 			"items": [
 				{
 					"type": "course",
-					"slug": "premier-cours",
-					"title": "Premier cours"
-				},
-				{
-					"type": "course",
 					"slug": "fsgsfgsfgsfg",
 					"title": "fsgsfgsfgsfg"
 				},
