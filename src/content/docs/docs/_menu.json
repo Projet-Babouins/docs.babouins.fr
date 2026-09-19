@@ -4,13 +4,7 @@
 			"type": "folder",
 			"slug": "test",
 			"label": "test",
-			"items": [
-				{
-					"type": "course",
-					"slug": "test",
-					"title": "test"
-				}
-			]
+			"items": []
 		},
 		{
 			"type": "folder",
