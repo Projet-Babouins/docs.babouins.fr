@@ -14,6 +14,14 @@ export default defineConfig({
 	// Session de l'espace admin : 8 heures.
 	session: { ttl: 60 * 60 * 8 },
 
+	security: {
+		// La vérification d'origine est faite dans src/middleware.ts, à partir de `site` : celle d'Astro
+		// compare à l'URL vue par Node, qui est fausse derrière le reverse proxy.
+		checkOrigin: false,
+		// Si le proxy transmet X-Forwarded-Host et X-Forwarded-Proto, Astro retrouve la vraie adresse.
+		allowedDomains: [{ hostname: 'docs.babouins.fr', protocol: 'https' }],
+	},
+
 	// L'éditeur visuel est gros : on demande à Vite de le préparer dès le démarrage
 	// du serveur de dev, plutôt qu'à la première ouverture de /admin.
 	vite: { optimizeDeps: { include: ['@milkdown/crepe'] } },

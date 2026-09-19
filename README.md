@@ -99,7 +99,7 @@ npm start
 
 `GITHUB_REPO` et `GITHUB_BRANCH` ont de bonnes valeurs par défaut et sont lues **au build**, pas au démarrage.
 
-Le HTTPS et le nom de domaine sont gérés par le reverse proxy placé devant. Il doit transmettre `Host` et `X-Forwarded-Proto`, et `security.allowedDomains` (dans `astro.config.mjs`) doit autoriser `docs.babouins.fr` : Astro compare l'en-tête `Origin` des formulaires à l'adresse du site, et sans ça les enregistrements répondent 403. Après le tout premier build avec une nouvelle configuration des blocs de code, lance une fois `npx astro build --force` pour vider le cache du contenu.
+Le HTTPS et le nom de domaine sont gérés par le reverse proxy placé devant. Derrière lui, Node croit que le site s'appelle `http://localhost:<port>` : tout ce qui a besoin de la vraie adresse (retour de la connexion GitHub, protection contre les requêtes venues d'un autre site) la lit donc dans `site`, dans `astro.config.mjs`. Si le site change d'adresse, c'est la seule ligne à modifier. Après le tout premier build avec une nouvelle configuration des blocs de code, lance une fois `npx astro build --force` pour vider le cache du contenu.
 
 ### 🔧 Mise en place sur GitHub
 
@@ -232,6 +232,7 @@ Si un cache est placé devant le site, `/version.json` et les pages HTML ne doiv
 
 - **Le serveur décide, jamais le navigateur.** Le code de `client/` n'est que de l'affichage ; toutes les vérifications sont dans le middleware, l'API et `library.ts`.
 - **GitHub est le juge.** Les 2 validations, l'interdiction de valider sa propre proposition et le droit de publier directement sont des règles du dépôt : ce code ne peut pas les contourner.
+- **Une requête qui modifie quelque chose doit venir d'une page du site** : le middleware compare son en-tête `Origin` à l'adresse du site et refuse le reste (protection CSRF). Il remplace `security.checkOrigin` d'Astro, qui se trompe d'adresse derrière un reverse proxy.
 - **Un seul point de contrôle d'accès** (`src/middleware.ts`) et **un seul endroit qui valide les chemins** (`lib/admin/paths.ts`) : un nom de page ou de dossier ne contient que des minuscules, des chiffres et des tirets, impossible de sortir du dossier des pages.
 - **Aucun jeton durable.** Le jeton de la personne connectée vit 8 heures, reste dans la session côté serveur, et n'est jamais envoyé au navigateur ni écrit dans un journal.
 - **Vie privée** : les commits sont signés avec l'adresse "noreply" du compte GitHub, pas avec la vraie adresse e-mail de l'étudiant.
