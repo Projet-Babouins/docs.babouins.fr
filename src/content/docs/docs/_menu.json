@@ -7,11 +7,6 @@
 			"items": [
 				{
 					"type": "course",
-					"slug": "fsgsfgsfgsfg",
-					"title": "fsgsfgsfgsfg"
-				},
-				{
-					"type": "course",
 					"slug": "test",
 					"title": "test"
 				}
