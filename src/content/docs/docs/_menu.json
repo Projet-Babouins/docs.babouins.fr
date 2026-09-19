@@ -7,11 +7,6 @@
 			"items": [
 				{
 					"type": "course",
-					"slug": "premier-cours",
-					"title": "Premier cours"
-				},
-				{
-					"type": "course",
 					"slug": "fsgsfgsfgsfg",
 					"title": "fsgsfgsfgsfg"
 				},
@@ -26,7 +21,13 @@
 			"type": "folder",
 			"slug": "sisr",
 			"label": "SISR",
-			"items": []
+			"items": [
+				{
+					"type": "course",
+					"slug": "creation-d-une-clef-ssh",
+					"title": "Création d'une clef SSH"
+				}
+			]
 		}
 	]
 }
