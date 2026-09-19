@@ -2,12 +2,6 @@
 	"items": [
 		{
 			"type": "folder",
-			"slug": "test",
-			"label": "test",
-			"items": []
-		},
-		{
-			"type": "folder",
 			"slug": "exemple",
 			"label": "Exemple",
 			"items": [
