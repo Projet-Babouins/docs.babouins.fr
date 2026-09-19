@@ -1,0 +1,41 @@
+---
+// Remplace le lien « Modifier cette page » de Starlight (voir `components` dans astro.config.mjs) :
+// les deux façons de contribuer y sont proposées, l'éditeur du site et GitHub.
+import { Icon } from '@astrojs/starlight/components';
+import { COURSES_DIR, adminUrl } from '../lib/admin/paths';
+
+const { editUrl, entry } = Astro.locals.starlightRoute;
+
+// L'éditeur n'ouvre que les pages Markdown de la documentation (pas l'accueil, ni un fichier .mdx).
+const file = entry.filePath ?? '';
+const page = file.startsWith(`${COURSES_DIR}/`) && file.endsWith('.md') ? file.slice(COURSES_DIR.length + 1, -'.md'.length) : null;
+---
+
+{
+	editUrl && (
+		<p class="sl-flex print:hidden">
+			<Icon name="pencil" size="1.2em" />
+			<span>
+				Modifier cette page :{' '}
+				{page && <><a href={adminUrl(page)}>dans l'éditeur</a> ou </>}
+				<a href={editUrl}>sur GitHub</a>
+			</span>
+		</p>
+	)
+}
+
+<style>
+	@layer starlight.core {
+		p {
+			gap: 0.5rem;
+			align-items: center;
+			color: var(--sl-color-gray-3);
+		}
+		a {
+			color: inherit;
+		}
+		a:hover {
+			color: var(--sl-color-white);
+		}
+	}
+</style>

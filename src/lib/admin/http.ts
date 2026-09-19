@@ -38,9 +38,9 @@ export async function readJson<T extends z.ZodType>(request: Request, schema: T)
 }
 
 /** L'utilisateur connecté, avec le stockage qui correspond à son rôle et à son mode. */
-export function editorOf({ locals }: APIContext): Editor {
+export function editorOf({ locals, request }: APIContext): Editor {
 	const user = locals.user!; // garanti par src/middleware.ts
-	return { store: storeFor(locals), author: { name: user.name, email: user.email } };
+	return { store: storeFor(locals, request.method !== 'GET'), author: { name: user.name, email: user.email } };
 }
 
 /** Client GitHub de l'utilisateur connecté, pour les propositions. Indisponible en stockage local. */

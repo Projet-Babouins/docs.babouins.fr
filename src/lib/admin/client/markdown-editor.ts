@@ -97,7 +97,7 @@ export function createMarkdownEditor({ host, source, onChange, upload }: EditorO
 				[Crepe.Feature.Latex]: false,
 			},
 			featureConfigs: {
-				[Crepe.Feature.Placeholder]: { text: 'Écris ton cours ici… Tape « / » pour insérer un bloc.' },
+				[Crepe.Feature.Placeholder]: { text: 'Écris ta page ici… Tape « / » pour insérer un bloc.' },
 				[Crepe.Feature.ImageBlock]: {
 					proxyDomURL: mediaPreviewUrl, // image pas encore en ligne : affichée via l'API admin
 					onUpload: upload,

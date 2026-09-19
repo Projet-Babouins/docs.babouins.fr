@@ -66,6 +66,8 @@ function exclusive<T>(task: () => Promise<T>): Promise<T> {
 	return result;
 }
 
+const READ_TOGETHER = 10;
+
 /** Menu aligné sur les fichiers présents (cours ajoutés ou supprimés hors de l'admin). */
 async function loadMenu(store: ContentStore): Promise<Menu> {
 	const menu = parseMenu(await store.read(MENU_FILE));
@@ -74,10 +76,15 @@ async function loadMenu(store: ContentStore): Promise<Menu> {
 		.map((file) => file.slice(COURSES_DIR.length + 1, -'.md'.length))
 		.filter(isValidCourseId);
 
-	for (const id of missingFrom(menu, courseIds)) {
-		const raw = (await store.read(courseFilePath(id))) ?? '';
-		const title = parseCourse(raw).title || slugOf(id);
-		ensureFolder(menu, parentOf(id)).push({ type: 'course', slug: slugOf(id), title });
+	// Lues ensemble, par petits groupes : à la file, chaque page coûterait un aller-retour vers GitHub.
+	const missing = missingFrom(menu, courseIds);
+	for (let start = 0; start < missing.length; start += READ_TOGETHER) {
+		const ids = missing.slice(start, start + READ_TOGETHER);
+		const raws = await Promise.all(ids.map((id) => store.read(courseFilePath(id))));
+		ids.forEach((id, index) => {
+			const title = parseCourse(raws[index] ?? '').title || slugOf(id);
+			ensureFolder(menu, parentOf(id)).push({ type: 'course', slug: slugOf(id), title });
+		});
 	}
 	return menu;
 }
@@ -117,9 +124,9 @@ export async function getTree(store: ContentStore): Promise<TreeNode[]> {
 }
 
 export async function getCourse(store: ContentStore, id: string) {
-	if (!isValidCourseId(id)) throw new AdminError(400, 'Identifiant de cours invalide.');
+	if (!isValidCourseId(id)) throw new AdminError(400, 'Identifiant de page invalide.');
 	const raw = await store.read(courseFilePath(id));
-	if (raw === null) throw new AdminError(404, 'Cours introuvable.');
+	if (raw === null) throw new AdminError(404, 'Page introuvable.');
 	return { id, version: versionOf(raw), url: courseUrl(id), ...parseCourse(raw) };
 }
 
@@ -136,11 +143,11 @@ export const saveCourse = (input: SaveCourseInput, { store, author }: Editor) =>
 
 		let previousRaw: string | undefined;
 		if (input.originalId !== null) {
-			if (!isValidCourseId(input.originalId)) throw new AdminError(400, 'Cours d’origine invalide.');
+			if (!isValidCourseId(input.originalId)) throw new AdminError(400, 'Page d’origine invalide.');
 			previousRaw = (await store.read(courseFilePath(input.originalId))) ?? undefined;
-			if (previousRaw === undefined) throw new AdminError(404, 'Ce cours n’existe plus.');
+			if (previousRaw === undefined) throw new AdminError(404, 'Cette page n’existe plus.');
 			if (versionOf(previousRaw) !== input.version) {
-				throw new AdminError(409, 'Ce cours a été modifié par quelqu’un d’autre. Recharge-le avant d’enregistrer.');
+				throw new AdminError(409, 'Cette page a été modifiée par quelqu’un d’autre. Recharge-la avant d’enregistrer.');
 			}
 		}
 
@@ -173,20 +180,20 @@ export const saveCourse = (input: SaveCourseInput, { store, author }: Editor) =>
 		if (serializeMenu(menu) !== menuBefore) changes.push(menuChange(menu));
 		await store.commit(changes, {
 			author,
-			message: `${input.originalId === null ? 'Ajoute' : 'Modifie'} le cours « ${input.title} »`,
+			message: `${input.originalId === null ? 'Ajoute' : 'Modifie'} la page « ${input.title} »`,
 		});
 		return { id, version: versionOf(raw), url: courseUrl(id) };
 	});
 
 export const deleteCourse = (id: string, { store, author }: Editor) =>
 	exclusive(async () => {
-		if (!isValidCourseId(id)) throw new AdminError(400, 'Identifiant de cours invalide.');
+		if (!isValidCourseId(id)) throw new AdminError(400, 'Identifiant de page invalide.');
 		const menu = await loadMenu(store);
 		const node = removeNode(menu, id);
-		if (node?.type !== 'course') throw new AdminError(404, 'Cours introuvable.');
+		if (node?.type !== 'course') throw new AdminError(404, 'Page introuvable.');
 		await store.commit([{ path: courseFilePath(id), content: null }, menuChange(menu)], {
 			author,
-			message: `Supprime le cours « ${node.title} »`,
+			message: `Supprime la page « ${node.title} »`,
 		});
 	});
 
@@ -237,7 +244,7 @@ export const deleteFolder = (path: string, { store, author }: Editor) =>
 		const deletions = courseIdsOf(folder, path).map((id) => ({ path: courseFilePath(id), content: null }));
 		await store.commit([...deletions, menuChange(menu)], {
 			author,
-			message: `Supprime le dossier « ${folder.label} » (${deletions.length} cours)`,
+			message: `Supprime le dossier « ${folder.label} » (${deletions.length} pages)`,
 		});
 	});
 

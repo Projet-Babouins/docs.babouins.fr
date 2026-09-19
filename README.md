@@ -55,7 +55,7 @@ Il y a deux façons d'écrire, à égalité. Le résultat est le même, et la re
     ```bash
     git checkout -b <branche>
     ```
-4. **Fais** ta modification (les pages sont dans `src/content/docs/cours/`), vérifie que le site se construit, puis **commite** :
+4. **Fais** ta modification (les pages sont dans `src/content/docs/docs/`), vérifie que le site se construit, puis **commite** :
     ```bash
     npm run build
     git add .
@@ -149,11 +149,13 @@ Le site est fait avec [Starlight](https://starlight.astro.build), le thème de d
 ├── src/
 │   ├── content/docs/
 │   │   ├── index.md              Page d'accueil de la doc (/)
-│   │   └── cours/                Les pages : un fichier Markdown = une page
+│   │   └── docs/                 Les pages : un fichier Markdown = une page
 │   │       └── _menu.json        Ordre du menu et noms des dossiers
 │   ├── middleware.ts             Contrôle d'accès : /admin et /api/admin exigent une session
 │   ├── starlight-menu.ts         Applique _menu.json à la barre latérale du site
-│   ├── components/Head.astro     <head> de Starlight + empreintes de la page (mise à jour douce)
+│   ├── components/
+│   │   ├── Head.astro            <head> de Starlight + empreintes de la page (mise à jour douce)
+│   │   └── EditLink.astro        "Modifier cette page" : dans l'éditeur, ou sur GitHub
 │   ├── lib/
 │   │   ├── build-id.ts           Identifiant du build en cours
 │   │   ├── live-update.ts        Mise à jour douce des pages ouvertes (navigateur)
@@ -192,7 +194,7 @@ Le site est fait avec [Starlight](https://starlight.astro.build), le thème de d
 
 Quelques repères pour débuter :
 
-- **Corriger une page** : le plus simple est l'éditeur. Avec Git, ouvre son fichier dans `src/content/docs/cours/`.
+- **Corriger une page** : le plus simple est l'éditeur. Avec Git, ouvre son fichier dans `src/content/docs/docs/`.
 - **Ajouter une page avec Git** : crée un fichier `.md` avec un `title` dans son en-tête. Pas besoin de toucher à `_menu.json` : la page est rangée à la fin de son dossier.
 - **Changer une couleur** : `src/styles/theme.css` pour la doc, le début de `src/styles/admin.css` pour l'éditeur.
 - **Le chemin d'une requête de l'éditeur**, de haut en bas : `client/`, puis une route de `pages/api/admin/` (validation du format avec zod), puis `library.ts` (règles métier), puis `store/` (fichiers).
@@ -214,6 +216,7 @@ Les pages du site sont **statiques**. En développement, l'éditeur écrit sur l
 - Tant que sa proposition est ouverte, une personne lit et modifie **sa** version des pages ; les autres voient le site publié. Une seule proposition ouverte par personne.
 - **La règle des 2 validations n'est pas dans ce code.** C'est GitHub qui l'applique, par le ruleset de `main` : un bug ou une requête trafiquée ne peut pas publier sans relecture. Le code ne fait qu'afficher le compteur (`REQUIRED_APPROVALS` dans `proposals.ts`, à garder égal au ruleset).
 - **Les rôles viennent du dépôt**, lus à la connexion : "Write" donne accès à l'éditeur, "Maintain" ou "Admin" fait un référent. Pour nommer un référent, on change son rôle sur GitHub, rien d'autre.
+- **Le moins d'appels possible à GitHub.** Chaque appel prend un quart de seconde ou plus, et ils se suivent : c'est ce qui rend une action lente. `store/github.ts` garde donc une "photo" de chaque branche (son dernier commit et ses fichiers) pendant 10 secondes, et la met à jour sur place après un commit réussi au lieu de tout relire. De même, "cette personne a-t-elle une proposition ouverte ?" n'est redemandé à GitHub que pour enregistrer (`proposals.ts`). Conséquence : ce qui est écrit hors de l'éditeur (une fusion, un commit fait avec Git) peut mettre 10 secondes à y apparaître.
 - **La branche n'avance que si personne n'a écrit entre-temps** (`force: false`) : sinon l'éditeur affiche "Le dépôt a changé entre-temps". Personne n'écrase le travail de personne.
 - **Le menu bouge le moins possible.** `_menu.json` est commun à tout le monde, et deux propositions qui modifient le même fichier se gênent. Une nouvelle page n'y est donc pas écrite, et corriger un texte n'y touche pas : seuls un rangement, un renommage ou un dossier créé le modifient. Si deux propositions le changent quand même, la seconde est "en conflit" : un référent règle le conflit sur GitHub.
 

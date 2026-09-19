@@ -1,23 +1,24 @@
 /**
- * Identifiants de cours et chemins de fichiers.
+ * Identifiants de pages et chemins de fichiers.
  *
- * Un cours est identifié par son chemin relatif au dossier des cours, sans
- * extension : `reseaux/modele-osi` ↔ `src/content/docs/cours/reseaux/modele-osi.md`.
+ * Dans le code, une page de la documentation s'appelle « course » : le site a commencé par des cours.
+ * Une page est identifiée par son chemin relatif au dossier des pages, sans
+ * extension : `reseaux/modele-osi` ↔ `src/content/docs/docs/reseaux/modele-osi.md`.
  * Un dossier est identifié de la même façon (`reseaux/tcp-ip`) ; la racine est ''.
  * Toute entrée utilisateur passe par ce fichier avant de toucher au stockage.
  *
  * Ce module ne dépend pas de Node : il est aussi utilisé dans le navigateur.
  */
 
-/** Dossier des cours, relatif à la racine du projet. */
-export const COURSES_DIR = 'src/content/docs/cours';
-/** Ordre et noms affichés des dossiers et des cours (voir menu.ts). */
+/** Dossier des pages, relatif à la racine du projet. */
+export const COURSES_DIR = 'src/content/docs/docs';
+/** Ordre et noms affichés des dossiers et des pages (voir menu.ts). */
 export const MENU_FILE = `${COURSES_DIR}/_menu.json`;
 /** Dossier des images envoyées depuis l'éditeur, et son URL publique. */
 export const MEDIA_DIR = 'public/media';
 export const MEDIA_URL = '/media';
-/** Préfixe des URL publiques des cours. */
-export const COURSES_URL = '/cours';
+/** Préfixe des URL publiques des pages. */
+export const COURSES_URL = '/docs';
 
 const SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Profondeur maximale d'un cours : 5 dossiers + le fichier. */
@@ -59,9 +60,15 @@ export const slugOf = (path: string) => path.split('/').at(-1) ?? '';
 
 /** Chemin du fichier Markdown d'un cours, relatif à la racine du projet. */
 export function courseFilePath(id: string): string {
-	if (!isValidCourseId(id)) throw new Error(`Identifiant de cours invalide : ${id}`);
+	if (!isValidCourseId(id)) throw new Error(`Identifiant de page invalide : ${id}`);
 	return `${COURSES_DIR}/${id}.md`;
 }
+
+/**
+ * Adresse de l'éditeur, ouvert sur une page si son identifiant est valide. Sert au lien « Modifier
+ * cette page » du site, et au retour de connexion : rien d'autre qu'un identifiant vérifié n'y entre.
+ */
+export const adminUrl = (id?: string | null) => (id && isValidCourseId(id) ? `/admin?page=${encodeURIComponent(id)}` : '/admin');
 
 /** URL publique de la page d'un cours. */
 export const courseUrl = (id: string) => `${COURSES_URL}/${id}/`;

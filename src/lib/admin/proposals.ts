@@ -15,7 +15,7 @@ import { parseCourse } from './frontmatter';
 import { GitHubError, type GitHub } from './github';
 import { AdminError } from './errors';
 import { COURSES_DIR, courseFilePath, isValidCourseId } from './paths';
-import { createGitHubStore, forgetBranch } from './store/github';
+import { createGitHubStore, forgetBranch, resetBranch } from './store/github';
 import type { ContentStore } from './store/types';
 
 /** Nombre de validations affiché. Doit correspondre à la règle de la branche `main` sur GitHub. */
@@ -122,13 +122,35 @@ function summarize(pull: PullRequest, reviews: Review[], me: AdminUser): Proposa
 	};
 }
 
-/** La proposition ouverte d'une personne depuis l'éditeur, ou `null`. */
-export async function findOwnProposal(github: GitHub, login: string): Promise<PullRequest | null> {
+/**
+ * Dernière réponse à « cette personne a-t-elle une proposition ouverte ? ». La question se pose à
+ * chaque lecture (quelle branche lire ?) : la reposer à GitHub à chaque clic ralentissait tout.
+ * Une LECTURE se contente donc d'une réponse récente ; un ENREGISTREMENT redemande toujours.
+ */
+const OWN_MS = 10_000;
+const owns = new Map<string, { askedAt: number; pull: Promise<PullRequest | null> }>();
+
+/** À appeler quand la proposition d'une personne vient d'être publiée ou retirée. */
+const forgetOwn = (login: string) => owns.delete(login);
+
+function rememberOwn(login: string, pull: Promise<PullRequest | null>) {
+	owns.set(login, { askedAt: Date.now(), pull });
+	pull.catch(() => {
+		if (owns.get(login)?.pull === pull) forgetOwn(login); // un échec n'est pas gardé en mémoire
+	});
+}
+
+/** La proposition ouverte d'une personne depuis l'éditeur, ou `null`. `fresh` : sans se fier à la mémoire. */
+export function findOwnProposal(github: GitHub, login: string, fresh = false): Promise<PullRequest | null> {
+	const known = owns.get(login);
+	if (!fresh && known && Date.now() - known.askedAt < OWN_MS) return known.pull;
+
 	const head = `${GITHUB_REPO.split('/')[0]}:${proposalBranch(login)}`;
-	const pulls = await github.get<PullRequest[]>(
-		`/pulls?state=open&base=${encodeURIComponent(GITHUB_BRANCH)}&head=${encodeURIComponent(head)}`,
-	);
-	return pulls[0] ?? null;
+	const pull = github
+		.get<PullRequest[]>(`/pulls?state=open&base=${encodeURIComponent(GITHUB_BRANCH)}&head=${encodeURIComponent(head)}`)
+		.then((pulls) => pulls[0] ?? null);
+	rememberOwn(login, pull);
+	return pull;
 }
 
 export async function getOwnProposal(github: GitHub, me: AdminUser): Promise<ProposalSummary | null> {
@@ -207,12 +229,12 @@ export async function getProposalBytes(github: GitHub, number: number, path: str
 
 // --- Actions ---------------------------------------------------------------------
 
-/** Dépose un avis sur une proposition : une vraie « review » GitHub, au nom du relecteur. */
+/** Dépose un avis sur une proposition : une vraie « review » GitHub, au nom du relecteur. Renvoie son nouvel état. */
 export async function reviewProposal(
 	github: GitHub,
 	me: AdminUser,
 	input: { number: number; action: ReviewAction; message: string; headSha: string },
-): Promise<void> {
+): Promise<ProposalDetail> {
 	const pull = await getPull(github, input.number);
 	if (input.action !== 'comment' && pull.user.login === me.login) {
 		throw new AdminError(400, 'On ne valide pas sa propre proposition : demande à quelqu’un d’autre de la relire.');
@@ -230,16 +252,25 @@ export async function reviewProposal(
 		body: input.message,
 	});
 
+	// Relue une seule fois : pour la réponse au navigateur, et pour savoir si c'était la dernière validation.
+	const detail = await getProposal(github, input.number, me);
+	if (detail.state === 'published') return published(pull, detail); // la fusion automatique a déjà eu lieu
+
 	// Filet de sécurité. Normalement GitHub publie tout seul (fusion automatique) ; si l'option a été
 	// oubliée sur le dépôt, la dernière validation déclenche ici la publication. GitHub reste juge :
 	// il refuse la fusion tant que sa règle n'est pas satisfaite, et ce refus est ignoré.
-	if (input.action !== 'approve') return;
-	const { approvals, changesRequested } = summarize(pull, await reviewsOf(github, input.number), me);
-	if (approvals < REQUIRED_APPROVALS || changesRequested) return;
-	await github
+	if (input.action !== 'approve' || detail.approvals < REQUIRED_APPROVALS || detail.changesRequested) return detail;
+	return github
 		.put(`/pulls/${input.number}/merge`, { sha: pull.head.sha, merge_method: 'squash', commit_title: `${pull.title} (#${input.number})` })
-		.then(() => forgetBranch(GITHUB_BRANCH))
-		.catch(() => undefined);
+		.then(() => published(pull, detail))
+		.catch(() => detail);
+}
+
+/** Une proposition vient d'être publiée : le site a changé, et son auteur n'a plus de proposition ouverte. */
+function published(pull: PullRequest, detail: ProposalDetail): ProposalDetail {
+	forgetBranch(GITHUB_BRANCH);
+	forgetOwn(pull.user.login);
+	return { ...detail, state: 'published' };
 }
 
 /** Retire une proposition : son auteur, ou un référent. */
@@ -249,6 +280,7 @@ export async function withdrawProposal(github: GitHub, me: AdminUser, number: nu
 		throw new AdminError(403, 'Seul son auteur (ou un référent) peut retirer une proposition.');
 	}
 	await github.patch(`/pulls/${number}`, { state: 'closed' });
+	forgetOwn(pull.user.login);
 	if (isFromEditor(pull)) {
 		await github.delete(`/git/refs/heads/${pull.head.ref}`).catch(() => undefined); // branche déjà supprimée : tant mieux
 		forgetBranch(pull.head.ref);
@@ -289,6 +321,7 @@ export async function publishProposal(github: GitHub, me: AdminUser, number: num
 		throw error;
 	}
 	forgetBranch(GITHUB_BRANCH);
+	forgetOwn(pull.user.login);
 	// La trace reste visible dans la proposition, pas seulement dans l'historique git.
 	await github
 		.post(`/issues/${number}/comments`, {
@@ -299,65 +332,75 @@ export async function publishProposal(github: GitHub, me: AdminUser, number: num
 
 // --- Enregistrer dans une proposition -------------------------------------------
 
-/** (Re)crée la branche de travail à partir du site publié. Appelé seulement sans proposition ouverte. */
-async function resetBranch(github: GitHub, branch: string): Promise<void> {
-	const main = await github.get<{ object: { sha: string } }>(`/git/ref/heads/${encodeURIComponent(GITHUB_BRANCH)}`);
-	try {
-		await github.post('/git/refs', { ref: `refs/heads/${branch}`, sha: main.object.sha });
-	} catch (error) {
-		// 422 : la branche existe encore (reste d'une proposition publiée ou retirée). On la ramène sur `main`.
-		if (!(error instanceof GitHubError) || error.status !== 422) throw error;
-		await github.patch(`/git/refs/heads/${branch}`, { sha: main.object.sha, force: true });
-	}
-	forgetBranch(branch);
-}
-
-async function openPullRequest(github: GitHub, me: AdminUser, branch: string, title: string): Promise<void> {
+/** Ouvre la pull request d'une branche de travail. `null` : il n'y avait rien à proposer. */
+async function openPullRequest(github: GitHub, me: AdminUser, branch: string, title: string): Promise<PullRequest | null> {
 	let pull: PullRequest;
 	try {
 		pull = await github.post<PullRequest>('/pulls', { title, head: branch, base: GITHUB_BRANCH, body: PR_BODY(me.login) });
 	} catch (error) {
 		// 422 : aucune différence avec le site publié (enregistrement sans changement). Rien à proposer.
-		if (error instanceof GitHubError && error.status === 422) return;
+		if (error instanceof GitHubError && error.status === 422) return null;
 		throw error;
 	}
 	// GitHub fusionnera tout seul dès que les validations et les vérifications seront là,
 	// que les avis soient donnés ici ou sur github.com. Demande l'option « Allow auto-merge » du dépôt.
-	await github
+	// Pas de `await` : l'enregistrement est terminé, la personne n'a pas à attendre ce réglage.
+	void github
 		.graphql(
 			'mutation($id: ID!) { enablePullRequestAutoMerge(input: { pullRequestId: $id, mergeMethod: SQUASH }) { clientMutationId } }',
 			{ id: pull.node_id },
 		)
 		.catch((error) => console.error(`Fusion automatique non activée sur #${pull.number} : ${error.message}`));
+	return pull;
 }
 
 /**
  * Stockage d'une personne qui propose : elle lit sa proposition en cours (pour retrouver
  * ce qu'elle a déjà écrit), ou à défaut le site publié, et elle enregistre dans sa branche.
- * Créé pour une seule requête : « a-t-elle une proposition ouverte ? » n'est demandé qu'une fois.
+ * Créé pour une seule requête. `fresh` : la requête va enregistrer, donc « a-t-elle une
+ * proposition ouverte ? » est redemandé à GitHub (une fois) au lieu de se fier à la mémoire.
  */
-export function createProposalStore(github: GitHub, me: AdminUser): ContentStore {
+export function createProposalStore(github: GitHub, me: AdminUser, fresh: boolean): ContentStore {
 	const branch = proposalBranch(me.login);
+	const site = createGitHubStore(github, GITHUB_BRANCH);
+	const draft = createGitHubStore(github, branch);
 	let own: Promise<PullRequest | null> | undefined;
-	const ownProposal = () => (own ??= findOwnProposal(github, me.login));
-	const reader = async () => createGitHubStore(github, (await ownProposal()) ? branch : GITHUB_BRANCH);
+	const ownProposal = () => (own ??= findOwnProposal(github, me.login, fresh));
+
+	async function reading<T>(read: (store: ContentStore) => Promise<T>): Promise<T> {
+		if (!(await ownProposal())) return read(site);
+		try {
+			return await read(draft);
+		} catch (error) {
+			// La mémoire avait du retard : la proposition vient d'être publiée ou retirée, sa branche n'existe plus.
+			if (!(error instanceof GitHubError) || error.status !== 404) throw error;
+			forgetOwn(me.login);
+			own = Promise.resolve(null);
+			return read(site);
+		}
+	}
 
 	return {
-		list: async (folder) => (await reader()).list(folder),
-		read: async (path) => (await reader()).read(path),
-		readBytes: async (path) => (await reader()).readBytes(path),
+		list: (folder) => reading((store) => store.list(folder)),
+		read: (path) => reading((store) => store.read(path)),
+		readBytes: (path) => reading((store) => store.readBytes(path)),
 
 		async commit(changes, options) {
 			const pull = await ownProposal();
-			if (!pull) await resetBranch(github, branch);
-			await createGitHubStore(github, branch).commit(changes, options);
+			if (!pull) await resetBranch(github, branch, GITHUB_BRANCH);
+			await draft.commit(changes, options);
 
-			if (!pull) await openPullRequest(github, me, branch, options.message);
+			if (!pull) {
+				// La suite (rafraîchir l'arbre, le bandeau) sait tout de suite qu'une proposition est ouverte.
+				own = openPullRequest(github, me, branch, options.message);
+				rememberOwn(me.login, own);
+				await own;
+			}
 			// Une proposition ouverte par l'envoi d'une image prend le nom de la première page enregistrée.
 			else if (isImageMessage(pull.title) && !isImageMessage(options.message)) {
 				await github.patch(`/pulls/${pull.number}`, { title: options.message });
+				forgetOwn(me.login);
 			}
-			own = undefined;
 		},
 	};
 }

@@ -209,7 +209,7 @@ export function createTree(container: HTMLElement, handlers: TreeHandlers) {
 		siblings.clear();
 		const list = renderList(items);
 		if (!list.hasChildNodes()) {
-			list.append(el('li', { class: 'tree-empty' }, filter ? 'Aucun résultat' : 'Aucun cours pour le moment'));
+			list.append(el('li', { class: 'tree-empty' }, filter ? 'Aucun résultat' : 'Aucune page pour le moment'));
 		}
 		container.replaceChildren(list);
 	}

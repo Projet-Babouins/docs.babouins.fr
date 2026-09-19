@@ -19,7 +19,7 @@ const withReviews = !isLocalMode();
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="robots" content="noindex" />
 		<link rel="icon" href="/favicon.png" type="image/png" />
-		<title>Édition des cours | Babouins</title>
+		<title>Éditeur de la documentation | Babouins</title>
 	</head>
 	<body>
 		<aside class="sidebar">
@@ -30,7 +30,7 @@ const withReviews = !isLocalMode();
 
 			<div class="sidebar-actions">
 				<button type="button" class="btn primary grow" data-action="new-course">
-					<span data-icon="file-plus"></span>Nouveau cours
+					<span data-icon="file-plus"></span>Nouvelle page
 				</button>
 				<button type="button" class="btn icon-only" id="new-folder" title="Nouveau dossier" aria-label="Nouveau dossier">
 					<span data-icon="folder-plus"></span>
@@ -47,10 +47,10 @@ const withReviews = !isLocalMode();
 
 			<label class="search">
 				<span data-icon="search"></span>
-				<input id="search" type="search" placeholder="Rechercher…" aria-label="Rechercher un cours" autocomplete="off" />
+				<input id="search" type="search" placeholder="Rechercher…" aria-label="Rechercher une page" autocomplete="off" />
 			</label>
 
-			<nav id="tree" class="tree" aria-label="Cours et dossiers"></nav>
+			<nav id="tree" class="tree" aria-label="Pages et dossiers"></nav>
 
 			<div class="sidebar-foot">
 				{user.avatar && <img src={user.avatar} alt="" width="28" height="28" />}
@@ -78,26 +78,26 @@ const withReviews = !isLocalMode();
 			<div id="mode-banner" class="mode-banner" role="status" hidden></div>
 
 			<section id="welcome" class="welcome">
-				<button type="button" class="btn icon-only mobile-only" id="welcome-menu" aria-label="Afficher les cours">
+				<button type="button" class="btn icon-only mobile-only" id="welcome-menu" aria-label="Afficher les pages">
 					<span data-icon="menu"></span>
 				</button>
 				<img src="/favicon.png" alt="" width="72" height="72" />
-				<h1>Édition des cours</h1>
-				<p>Choisis un cours dans la liste, ou commence à en écrire un.</p>
+				<h1>Éditeur de la documentation</h1>
+				<p>Choisis une page dans la liste, ou commence à en écrire une.</p>
 				<button type="button" class="btn primary" data-action="new-course">
-					<span data-icon="file-plus"></span>Nouveau cours
+					<span data-icon="file-plus"></span>Nouvelle page
 				</button>
 				<ul class="tips">
-					<li>Glisse un cours ou un dossier pour le ranger ou changer l'ordre du menu.</li>
+					<li>Glisse une page ou un dossier pour le ranger ou changer l'ordre du menu.</li>
 					<li>Clic droit (ou « … ») sur un élément pour le renommer ou le supprimer.</li>
-					<li><kbd>Ctrl</kbd> + <kbd>S</kbd> enregistre le cours.</li>
+					<li><kbd>Ctrl</kbd> + <kbd>S</kbd> enregistre la page.</li>
 					{withReviews && <li>Un enregistrement n'est pas publié tout de suite : il part en relecture, et il faut 2 validations.</li>}
 				</ul>
 			</section>
 
 			<section id="reviews" class="doc" hidden>
 				<header class="doc-bar">
-					<button type="button" class="btn icon-only mobile-only" id="reviews-menu" aria-label="Afficher les cours">
+					<button type="button" class="btn icon-only mobile-only" id="reviews-menu" aria-label="Afficher les pages">
 						<span data-icon="menu"></span>
 					</button>
 					<button type="button" class="btn icon-only" id="reviews-back" title="Toutes les propositions" aria-label="Toutes les propositions" hidden>
@@ -116,12 +116,12 @@ const withReviews = !isLocalMode();
 
 			<form id="doc" class="doc" hidden>
 				<header class="doc-bar">
-					<button type="button" class="btn icon-only mobile-only" id="toggle-sidebar" aria-label="Afficher les cours">
+					<button type="button" class="btn icon-only mobile-only" id="toggle-sidebar" aria-label="Afficher les pages">
 						<span data-icon="menu"></span>
 					</button>
-					<label class="folder-picker" title="Dossier du cours">
+					<label class="folder-picker" title="Dossier de la page">
 						<span data-icon="folder"></span>
-						<select id="folder" aria-label="Dossier du cours"></select>
+						<select id="folder" aria-label="Dossier de la page"></select>
 					</label>
 					<span id="status" class="status" role="status"></span>
 
@@ -138,7 +138,7 @@ const withReviews = !isLocalMode();
 
 				<div class="doc-scroll">
 					<div class="doc-page">
-						<input id="title" class="doc-title" placeholder="Titre du cours" maxlength="150" autocomplete="off" aria-label="Titre du cours" />
+						<input id="title" class="doc-title" placeholder="Titre de la page" maxlength="150" autocomplete="off" aria-label="Titre de la page" />
 						<input
 							id="description"
 							class="doc-description"
@@ -149,7 +149,7 @@ const withReviews = !isLocalMode();
 						/>
 						<label class="doc-url" title="Adresse de la page sur le site">
 							<span id="url-prefix"></span>
-							<input id="slug" placeholder="nom-du-cours" maxlength="60" autocomplete="off" spellcheck="false" aria-label="Nom dans l'adresse" />
+							<input id="slug" placeholder="nom-de-la-page" maxlength="60" autocomplete="off" spellcheck="false" aria-label="Nom dans l'adresse" />
 						</label>
 
 						<div id="editor" class="doc-editor"></div>

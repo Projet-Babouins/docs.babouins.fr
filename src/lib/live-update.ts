@@ -1,10 +1,10 @@
 /**
  * Mise à jour douce des pages ouvertes.
  *
- * Quand un cours est enregistré, le site est reconstruit. Un lecteur qui a déjà la page
+ * Quand une page est publiée, le site est reconstruit. Un lecteur qui a déjà la page
  * ouverte ne verrait rien sans recharger. Ce script vérifie donc de temps en temps si une
  * nouvelle version du site est en ligne, puis remplace seulement ce qui a changé (le
- * contenu du cours, le menu), sans recharger la page et sans perdre la position de lecture.
+ * contenu de la page, le menu), sans recharger la page et sans perdre la position de lecture.
  *
  * Trois empreintes sont écrites dans chaque page au build par components/Head.astro :
  *  - babouins:build  identifiant du build, le même pour tout le site ;
@@ -56,7 +56,7 @@ async function check(): Promise<void> {
 async function update(build: string): Promise<void> {
 	const response = await fetch(location.pathname, { cache: 'no-store' });
 
-	// Cas de la page « introuvable » : un cours tout juste créé, ouvert avant sa mise en ligne.
+	// Cas de la page « introuvable » : une page tout juste créée, ouverte avant sa mise en ligne.
 	// Personne ne lit une page 404 : dès que l'adresse existe, on recharge pour de bon.
 	if (meta(document, 'missing')) {
 		if (response.ok) location.reload();
@@ -77,7 +77,7 @@ async function update(build: string): Promise<void> {
 
 	const pageChanged = incoming.page !== current.page;
 	const navChanged = incoming.nav !== current.nav;
-	// Rien de visible n'a changé ici (c'est un autre cours qui a été modifié) : on note le build, sans bruit.
+	// Rien de visible n'a changé ici (c'est une autre page qui a été modifiée) : on note le build, sans bruit.
 	if (!pageChanged && !navChanged) {
 		current = incoming;
 		return;
@@ -106,7 +106,7 @@ async function update(build: string): Promise<void> {
 
 /**
  * La nouvelle version a-t-elle besoin d'un style ou d'un script absent de cette page ?
- * (premier bloc de code d'un cours, nouvelle version du code du site…) Les scripts insérés
+ * (premier bloc de code d'une page, nouvelle version du code du site…) Les scripts insérés
  * après coup ne s'exécutent pas : dans ce cas, seul un vrai rechargement est fiable.
  */
 function needsNewAssets(next: Document): boolean {

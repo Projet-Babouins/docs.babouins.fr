@@ -29,6 +29,8 @@ declare namespace App {
 		direct: DirectMode;
 		/** Valeur anti-CSRF du flux OAuth, vérifiée au retour de GitHub. */
 		oauthState: string;
+		/** Page à rouvrir dans l'éditeur après la connexion (lien « Modifier cette page »). */
+		openPage: string;
 	}
 
 	/** Données attachées à la requête par le middleware. */

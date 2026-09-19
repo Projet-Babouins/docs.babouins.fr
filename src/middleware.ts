@@ -38,6 +38,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 		if (isAdminApi) {
 			return Response.json({ error: 'Connexion requise.' }, { status: 401 });
 		}
+		// Venu du lien « Modifier cette page » : la page demandée sera rouverte après la connexion.
+		const page = context.url.searchParams.get('page');
+		if (page) context.session?.set('openPage', page);
 		return context.redirect('/admin/login');
 	}
 

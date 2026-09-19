@@ -55,7 +55,7 @@ export const POST: APIRoute = (context) =>
 
 		if (input.action === 'withdraw') return withdrawProposal(github, me, input.number);
 		if (input.action === 'publish') return publishProposal(github, me, input.number, input.message);
-		if (input.action === 'update') await updateProposal(github, input.number);
-		else await reviewProposal(github, me, input);
+		if (input.action !== 'update') return reviewProposal(github, me, input);
+		await updateProposal(github, input.number);
 		return getProposal(github, input.number, me);
 	});

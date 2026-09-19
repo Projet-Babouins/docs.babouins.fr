@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { ADMIN_DEV_LOGIN } from 'astro:env/server';
 import { buildAuthorizeUrl, callbackUrl, isOAuthConfigured } from '../../lib/admin/github-oauth';
+import { adminUrl } from '../../lib/admin/paths';
 import { isLocalMode } from '../../lib/admin/store';
 
 export const prerender = false;
@@ -17,7 +18,9 @@ export const GET: APIRoute = async ({ session, redirect, url }) => {
 			avatar: '',
 			role: 'referent',
 		});
-		return redirect('/admin');
+		const openPage = await session?.get('openPage'); // page demandée avant la connexion (voir middleware.ts)
+		session?.delete('openPage');
+		return redirect(adminUrl(openPage));
 	}
 
 	if (!isOAuthConfigured()) {

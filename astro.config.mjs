@@ -74,17 +74,23 @@ export default defineConfig({
 					href: 'https://github.com/Projet-Babouins/docs.babouins.fr',
 				},
 			],
+			// Adresse du fichier de chaque page sur GitHub, pour le lien « Modifier cette page ».
+			editLink: { baseUrl: 'https://github.com/Projet-Babouins/docs.babouins.fr/edit/main/' },
 			sidebar: [
 				{
-					label: 'Cours',
-					// Un sous-dossier de src/content/docs/cours = un groupe.
-					items: [{ autogenerate: { directory: 'cours' } }],
+					label: 'Documentation',
+					// Un sous-dossier de src/content/docs/docs = un groupe.
+					items: [{ autogenerate: { directory: 'docs' } }],
 				},
 			],
 			// Ordre et noms des dossiers choisis dans l'admin (voir src/starlight-menu.ts).
 			routeMiddleware: './src/starlight-menu.ts',
-			// <head> d'origine + mise à jour douce des pages ouvertes (voir src/lib/live-update.ts).
-			components: { Head: './src/components/Head.astro' },
+			components: {
+				// <head> d'origine + mise à jour douce des pages ouvertes (voir src/lib/live-update.ts).
+				Head: './src/components/Head.astro',
+				// « Modifier cette page » : dans l'éditeur du site, ou sur GitHub.
+				EditLink: './src/components/EditLink.astro',
+			},
 		}),
 	],
 });

@@ -60,8 +60,7 @@ const reviews = createReviews(reviewsPanel, {
 	me: () => me,
 	// Une proposition publiée, retirée ou mise à jour change ce que l'arbre doit montrer.
 	onChange: async () => {
-		await refreshMe();
-		await refreshTree();
+		await Promise.all([refreshMe(), refreshTree()]);
 	},
 });
 
@@ -115,9 +114,8 @@ async function refreshMe() {
 
 async function setDirect(reason: string | null) {
 	await api.setDirect(reason);
-	await refreshMe();
 	// Le référent ne lit plus la même chose : sa proposition d'un côté, le site publié de l'autre.
-	await refreshTree();
+	await Promise.all([refreshMe(), refreshTree()]);
 	toast(reason === null ? 'Tes enregistrements repartent en proposition.' : 'Publication directe activée.');
 }
 
@@ -138,7 +136,7 @@ async function toggleDirect() {
 function savedStatus(): string {
 	if (me.local) return 'Enregistré';
 	if (me.direct) return 'Publié · en ligne dans quelques minutes';
-	return me.proposal ? `Proposition envoyée · ${me.proposal.approvals}/${me.proposal.required} validations` : 'Enregistré';
+	return 'Proposition envoyée · en attente de relecture';
 }
 
 async function refreshReviewsCount() {
@@ -167,7 +165,7 @@ const confirmLeave = async () =>
 	!dirty ||
 	(await confirmDialog({
 		title: 'Abandonner les modifications ?',
-		message: 'Ce cours a des modifications non enregistrées. Elles seront perdues.',
+		message: 'Cette page a des modifications non enregistrées. Elles seront perdues.',
 		confirmLabel: 'Abandonner',
 		danger: true,
 	}));
@@ -190,16 +188,36 @@ function renderFolderSelect() {
 	urlPrefix.textContent = `${COURSES_URL}/${selectedFolder ? `${selectedFolder}/` : ''}`;
 }
 
-async function refreshTree() {
-	items = await api.tree();
+function showTree(nodes: TreeNode[]) {
+	items = nodes;
 	tree.setItems(items);
 	renderFolderSelect();
 }
 
+const refreshTree = async () => showTree(await api.tree());
+
+const withoutNode = (nodes: TreeNode[], path: string): TreeNode[] =>
+	nodes
+		.filter((node) => node.path !== path)
+		.map((node) => (node.type === 'folder' ? { ...node, items: withoutNode(node.items, path) } : node));
+
+/**
+ * Suppression : l'élément quitte l'arbre tout de suite, sans attendre la réponse de GitHub.
+ * Si elle échoue, l'arbre est relu : l'élément revient, et l'erreur est affichée.
+ */
+async function removeNow(path: string, remove: () => Promise<void>) {
+	showTree(withoutNode(items, path));
+	try {
+		await remove();
+	} finally {
+		await refreshTree();
+	}
+}
+
 function syncAddressBar() {
 	const url = new URL(location.href);
-	if (current) url.searchParams.set('cours', current.id);
-	else url.searchParams.delete('cours');
+	if (current) url.searchParams.set('page', current.id);
+	else url.searchParams.delete('page');
 	history.replaceState(null, '', url);
 }
 
@@ -233,7 +251,7 @@ async function showDocument(course: Partial<Course>, folder: string) {
 	welcome.hidden = reviewsPanel.hidden = true;
 	doc.hidden = false;
 	document.body.classList.remove('sidebar-open');
-	setStatus(current ? '' : 'Nouveau cours');
+	setStatus(current ? '' : 'Nouvelle page');
 	renderFolderSelect();
 	tree.setCurrent(current?.id ?? null);
 	syncAddressBar();
@@ -264,7 +282,7 @@ function closeDocument() {
 async function save() {
 	if (!titleInput.value.trim()) {
 		titleInput.focus();
-		throw new Error('Donne un titre au cours avant d’enregistrer.');
+		throw new Error('Donne un titre à la page avant d’enregistrer.');
 	}
 	saveButton.disabled = true;
 	setStatus('Enregistrement…');
@@ -287,8 +305,9 @@ async function save() {
 		viewLink.hidden = $('#doc-menu').hidden = false;
 		tree.setCurrent(saved.id);
 		syncAddressBar();
-		await Promise.all([refreshTree(), refreshMe()]);
+		await refreshTree();
 		setStatus(savedStatus(), 'saved');
+		run(refreshMe); // sans attendre : le bandeau (nombre de validations) se met à jour juste après
 	} catch (error) {
 		setStatus('Modifications non enregistrées', 'dirty');
 		throw error;
@@ -299,16 +318,15 @@ async function save() {
 
 async function deleteCourse(id: string, title: string) {
 	const confirmed = await confirmDialog({
-		title: 'Supprimer ce cours ?',
-		message: `« ${title} » sera supprimé du site.`,
+		title: 'Supprimer cette page ?',
+		message: `« ${title} » sera supprimée du site.`,
 		confirmLabel: 'Supprimer',
 		danger: true,
 	});
 	if (!confirmed) return;
-	await api.deleteCourse(id);
+	await removeNow(id, () => api.deleteCourse(id));
 	if (current?.id === id) closeDocument();
-	await refreshTree();
-	toast('Cours supprimé.');
+	toast('Page supprimée.');
 }
 
 // --- Dossiers ---------------------------------------------------------------
@@ -334,7 +352,7 @@ async function renameFolder(folder: TreeFolder) {
 				name: 'slug',
 				label: 'Adresse',
 				value: slugOf(folder.path),
-				hint: 'Partie de l’URL. La changer modifie l’adresse de tous les cours du dossier.',
+				hint: 'Partie de l’URL. La changer modifie l’adresse de toutes les pages du dossier.',
 			},
 		],
 		confirmLabel: 'Renommer',
@@ -355,15 +373,15 @@ async function deleteFolder(folder: TreeFolder) {
 		message:
 			count === 0
 				? `Le dossier « ${folder.label} » est vide.`
-				: `Le dossier « ${folder.label} » et ses ${count} cours seront supprimés du site.`,
-		confirmLabel: count === 0 ? 'Supprimer' : `Supprimer le dossier et ${count} cours`,
+				: `Le dossier « ${folder.label} » et ses ${count} pages seront supprimés du site.`,
+		confirmLabel: count === 0 ? 'Supprimer' : `Supprimer le dossier et ${count} pages`,
 		danger: true,
 	});
 	if (!confirmed) return;
-	await api.deleteFolder(folder.path);
+	await removeNow(folder.path, () => api.deleteFolder(folder.path));
 	if (current && current.id.startsWith(`${folder.path}/`)) closeDocument();
 	if (selectedFolder === folder.path || selectedFolder.startsWith(`${folder.path}/`)) selectedFolder = '';
-	await refreshTree();
+	renderFolderSelect();
 	toast('Dossier supprimé.');
 }
 
@@ -376,7 +394,7 @@ function menuFor(node: TreeNode): MenuItem[] {
 		];
 	}
 	return [
-		{ label: 'Nouveau cours ici', icon: 'file-plus', action: () => run(() => newCourse(node.path)) },
+		{ label: 'Nouvelle page ici', icon: 'file-plus', action: () => run(() => newCourse(node.path)) },
 		{ label: 'Nouveau sous-dossier', icon: 'folder-plus', action: () => run(() => newFolder(node.path)) },
 		{ label: 'Renommer', icon: 'pencil', action: () => run(() => renameFolder(node)) },
 		{ label: 'Supprimer', icon: 'trash', danger: true, action: () => run(() => deleteFolder(node)) },
@@ -473,7 +491,7 @@ $('#doc-menu').addEventListener('click', (event) => {
 	if (!current) return;
 	const { id } = current;
 	openMenu(event.currentTarget as HTMLElement, [
-		{ label: 'Supprimer le cours', icon: 'trash', danger: true, action: () => run(() => deleteCourse(id, titleInput.value)) },
+		{ label: 'Supprimer la page', icon: 'trash', danger: true, action: () => run(() => deleteCourse(id, titleInput.value)) },
 	]);
 });
 
@@ -491,6 +509,6 @@ window.addEventListener('beforeunload', (event) => {
 run(async () => {
 	await Promise.all([refreshMe(), refreshTree()]);
 	if (!me.local) run(refreshReviewsCount); // sans attendre : ce compteur ne bloque rien
-	const requested = new URL(location.href).searchParams.get('cours');
+	const requested = new URL(location.href).searchParams.get('page');
 	if (requested) await openCourse(requested).catch(() => syncAddressBar());
 });

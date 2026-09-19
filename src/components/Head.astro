@@ -19,7 +19,7 @@ const outline = (entries: Entry[]): unknown[] =>
 <meta name="babouins:build" content={BUILD_ID} />
 <meta name="babouins:page" content={hash([entry.data, entry.body])} />
 <meta name="babouins:nav" content={hash(outline(sidebar))} />
-{/* Page « introuvable » : elle se rechargera seule si l'adresse finit par exister (cours tout juste créé). */}
+{/* Page « introuvable » : elle se rechargera seule si l'adresse finit par exister (page tout juste créée). */}
 {entry.id === '404' && <meta name="babouins:missing" content="1" />}
 
 <script>

@@ -22,8 +22,9 @@ export const isLocalMode = () => import.meta.env.DEV && ADMIN_STORE !== 'github'
  * - par défaut, dans sa proposition : il sera relu avant d'être publié ;
  * - directement sur le site, seulement pour un référent qui a activé la publication directe.
  * Le navigateur ne choisit rien : le rôle et le mode viennent de la session (voir middleware.ts).
+ * `writing` : la requête va enregistrer (voir createProposalStore).
  */
-export function storeFor(locals: App.Locals): ContentStore {
+export function storeFor(locals: App.Locals, writing: boolean): ContentStore {
 	if (isLocalMode()) return localStore;
 
 	const user = locals.user!; // garanti par src/middleware.ts
@@ -34,5 +35,5 @@ export function storeFor(locals: App.Locals): ContentStore {
 		// La raison donnée par le référent est écrite dans chaque commit : rien n'est publié en cachette.
 		return createGitHubStore(github, GITHUB_BRANCH, { trailer: `Publication directe : ${locals.direct.reason}` });
 	}
-	return createProposalStore(github, user);
+	return createProposalStore(github, user, writing);
 }

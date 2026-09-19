@@ -1,6 +1,6 @@
 /**
- * Middleware de route Starlight : applique le menu des cours (_menu.json) à la
- * barre latérale du site. Starlight génère la liste des cours à partir des
+ * Middleware de route Starlight : applique le menu des pages (_menu.json) à la
+ * barre latérale du site. Starlight génère la liste des pages à partir des
  * fichiers, triée par ordre alphabétique et avec les noms de dossiers bruts ;
  * ici on la remet dans l'ordre choisi dans l'admin, avec les vrais noms.
  * Doc : https://starlight.astro.build/guides/route-data/
@@ -30,7 +30,7 @@ function readMenu(): Menu {
 const flatten = (entries: SidebarEntry[]): SidebarLink[] =>
 	entries.flatMap((entry) => (entry.type === 'link' ? [entry] : flatten(entry.entries)));
 
-/** Nom de fichier ou de dossier d'une entrée, au niveau `depth` sous /cours/. */
+/** Nom de fichier ou de dossier d'une entrée, au niveau `depth` sous /docs/. */
 function slugAt(entry: SidebarEntry, depth: number): string | undefined {
 	const href = flatten([entry])[0]?.href;
 	if (!href?.startsWith(`${COURSES_URL}/`)) return undefined;

@@ -854,6 +854,38 @@ main {
 	margin-top: 1.25rem;
 }
 
+/* Témoin d'activité : visible tant qu'un appel à l'API est en cours (voir client/api.ts). */
+body.busy::before {
+	content: '';
+	position: fixed;
+	inset: 0 0 auto;
+	z-index: 300;
+	height: 3px;
+	background: var(--accent);
+	transform-origin: left;
+	animation: busy 1.2s ease-in-out infinite;
+}
+body.busy {
+	cursor: progress;
+}
+@keyframes busy {
+	0% {
+		transform: scaleX(0);
+	}
+	60% {
+		transform: scaleX(0.8);
+	}
+	100% {
+		transform: scaleX(1);
+		opacity: 0;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	body.busy::before {
+		animation: none;
+	}
+}
+
 .toasts {
 	position: fixed;
 	right: 1rem;

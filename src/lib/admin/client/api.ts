@@ -37,8 +37,16 @@ export interface CourseDraft {
 	body: string;
 }
 
+/** Nombre d'appels en cours : tant qu'il y en a, la page montre qu'elle travaille (`body.busy`, voir admin.css). */
+let pending = 0;
+function setBusy(delta: 1 | -1) {
+	pending += delta;
+	document.body.classList.toggle('busy', pending > 0);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-	const response = await fetch(`/api/admin/${path}`, init);
+	setBusy(1);
+	const response = await fetch(`/api/admin/${path}`, init).finally(() => setBusy(-1));
 	if (response.status === 401) {
 		location.href = '/admin/login';
 		throw new Error('Session expirée.');

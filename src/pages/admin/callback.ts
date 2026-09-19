@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { authenticate, callbackUrl } from '../../lib/admin/github-oauth';
+import { adminUrl } from '../../lib/admin/paths';
 
 export const prerender = false;
 
@@ -30,9 +31,11 @@ export const GET: APIRoute = async ({ session, redirect, url }) => {
 		);
 	}
 
+	const openPage = await session?.get('openPage'); // page demandée avant la connexion (voir middleware.ts)
+	session?.delete('openPage');
 	// Nouvel identifiant de session à la connexion (contre la fixation de session).
 	await session?.regenerate();
 	session?.set('user', authenticated.user);
 	session?.set('githubToken', authenticated.token);
-	return redirect('/admin');
+	return redirect(adminUrl(openPage));
 };

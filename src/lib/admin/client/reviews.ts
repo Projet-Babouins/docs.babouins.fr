@@ -171,7 +171,7 @@ export function createReviews(root: HTMLElement, options: ReviewsOptions) {
 			el('p', { class: 'review-state' }, STATE_TEXT[proposal.state]),
 
 			el('h2', {}, 'Ce qui change'),
-			proposal.pages.length ? el('ul', { class: 'review-files' }, ...pages) : el('p', { class: 'review-empty' }, 'Aucune page de cours.'),
+			proposal.pages.length ? el('ul', { class: 'review-files' }, ...pages) : el('p', { class: 'review-empty' }, 'Aucune page de la documentation.'),
 			...(proposal.otherFiles.length
 				? [el('p', { class: 'review-other' }, `Autres fichiers : ${proposal.otherFiles.join(', ')}`)]
 				: []),
