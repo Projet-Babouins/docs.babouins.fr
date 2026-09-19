@@ -2,28 +2,6 @@
 	"items": [
 		{
 			"type": "folder",
-			"slug": "exemple",
-			"label": "Exemple",
-			"items": [
-				{
-					"type": "course",
-					"slug": "premier-cours",
-					"title": "Premier cours"
-				},
-				{
-					"type": "course",
-					"slug": "fsgsfgsfgsfg",
-					"title": "fsgsfgsfgsfg"
-				},
-				{
-					"type": "course",
-					"slug": "test",
-					"title": "test"
-				}
-			]
-		},
-		{
-			"type": "folder",
 			"slug": "sisr",
 			"label": "SISR",
 			"items": []
