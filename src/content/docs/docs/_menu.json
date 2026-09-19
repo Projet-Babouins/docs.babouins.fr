@@ -33,6 +33,12 @@
 					"title": "test"
 				}
 			]
+		},
+		{
+			"type": "folder",
+			"slug": "sisr",
+			"label": "SISR",
+			"items": []
 		}
 	]
 }
