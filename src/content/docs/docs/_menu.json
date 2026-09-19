@@ -2,18 +2,6 @@
 	"items": [
 		{
 			"type": "folder",
-			"slug": "test",
-			"label": "test",
-			"items": [
-				{
-					"type": "course",
-					"slug": "test",
-					"title": "test"
-				}
-			]
-		},
-		{
-			"type": "folder",
 			"slug": "exemple",
 			"label": "Exemple",
 			"items": [
@@ -33,6 +21,12 @@
 					"title": "test"
 				}
 			]
+		},
+		{
+			"type": "folder",
+			"slug": "sisr",
+			"label": "SISR",
+			"items": []
 		}
 	]
 }
