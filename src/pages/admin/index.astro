@@ -1,0 +1,166 @@
+---
+// Espace d'édition des cours. L'accès est contrôlé par src/middleware.ts.
+// Cette page n'est qu'une coquille HTML : tout le comportement est dans
+// src/lib/admin/client/main.ts, tout le style dans src/styles/admin.css.
+import '../../styles/admin.css';
+import { isLocalMode } from '../../lib/admin/store';
+
+export const prerender = false;
+
+const user = Astro.locals.user!;
+// Stockage local (développement) : pas de propositions, donc pas d'écran de relecture.
+const withReviews = !isLocalMode();
+---
+
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex" />
+		<link rel="icon" href="/favicon.png" type="image/png" />
+		<title>Édition des cours | Babouins</title>
+	</head>
+	<body>
+		<aside class="sidebar">
+			<a class="brand" href="/" title="Retour au site">
+				<img src="/favicon.png" alt="" width="32" height="32" />
+				<span>Babouins <small>Édition</small></span>
+			</a>
+
+			<div class="sidebar-actions">
+				<button type="button" class="btn primary grow" data-action="new-course">
+					<span data-icon="file-plus"></span>Nouveau cours
+				</button>
+				<button type="button" class="btn icon-only" id="new-folder" title="Nouveau dossier" aria-label="Nouveau dossier">
+					<span data-icon="folder-plus"></span>
+				</button>
+			</div>
+
+			{
+				withReviews && (
+					<button type="button" class="btn" id="open-reviews">
+						<span data-icon="review" />Relectures<span id="reviews-count" class="badge" hidden />
+					</button>
+				)
+			}
+
+			<label class="search">
+				<span data-icon="search"></span>
+				<input id="search" type="search" placeholder="Rechercher…" aria-label="Rechercher un cours" autocomplete="off" />
+			</label>
+
+			<nav id="tree" class="tree" aria-label="Cours et dossiers"></nav>
+
+			<div class="sidebar-foot">
+				{user.avatar && <img src={user.avatar} alt="" width="28" height="28" />}
+				<span class="user-name">
+					{user.name}
+					{user.role === 'referent' && <small>Référent</small>}
+				</span>
+				{
+					withReviews && user.role === 'referent' && (
+						<button type="button" class="btn icon-only ghost" id="toggle-direct" title="Publier sans relecture (référents)" aria-label="Publier sans relecture">
+							<span data-icon="direct" />
+						</button>
+					)
+				}
+				<form method="post" action="/admin/logout">
+					<button type="submit" class="btn icon-only ghost" title="Déconnexion" aria-label="Déconnexion">
+						<span data-icon="logout"></span>
+					</button>
+				</form>
+			</div>
+		</aside>
+
+		<main>
+			<!-- Où partent les enregistrements : proposition en cours, ou publication directe d'un référent. -->
+			<div id="mode-banner" class="mode-banner" role="status" hidden></div>
+
+			<section id="welcome" class="welcome">
+				<button type="button" class="btn icon-only mobile-only" id="welcome-menu" aria-label="Afficher les cours">
+					<span data-icon="menu"></span>
+				</button>
+				<img src="/favicon.png" alt="" width="72" height="72" />
+				<h1>Édition des cours</h1>
+				<p>Choisis un cours dans la liste, ou commence à en écrire un.</p>
+				<button type="button" class="btn primary" data-action="new-course">
+					<span data-icon="file-plus"></span>Nouveau cours
+				</button>
+				<ul class="tips">
+					<li>Glisse un cours ou un dossier pour le ranger ou changer l'ordre du menu.</li>
+					<li>Clic droit (ou « … ») sur un élément pour le renommer ou le supprimer.</li>
+					<li><kbd>Ctrl</kbd> + <kbd>S</kbd> enregistre le cours.</li>
+					{withReviews && <li>Un enregistrement n'est pas publié tout de suite : il part en relecture, et il faut 2 validations.</li>}
+				</ul>
+			</section>
+
+			<section id="reviews" class="doc" hidden>
+				<header class="doc-bar">
+					<button type="button" class="btn icon-only mobile-only" id="reviews-menu" aria-label="Afficher les cours">
+						<span data-icon="menu"></span>
+					</button>
+					<button type="button" class="btn icon-only" id="reviews-back" title="Toutes les propositions" aria-label="Toutes les propositions" hidden>
+						<span data-icon="back"></span>
+					</button>
+					<strong id="reviews-title" class="grow">Relectures</strong>
+					<button type="button" class="btn icon-only" id="reviews-refresh" title="Actualiser" aria-label="Actualiser">
+						<span data-icon="refresh"></span>
+					</button>
+					<button type="button" class="btn" id="reviews-close">Fermer</button>
+				</header>
+				<div class="doc-scroll">
+					<div id="reviews-content" class="doc-page reviews"></div>
+				</div>
+			</section>
+
+			<form id="doc" class="doc" hidden>
+				<header class="doc-bar">
+					<button type="button" class="btn icon-only mobile-only" id="toggle-sidebar" aria-label="Afficher les cours">
+						<span data-icon="menu"></span>
+					</button>
+					<label class="folder-picker" title="Dossier du cours">
+						<span data-icon="folder"></span>
+						<select id="folder" aria-label="Dossier du cours"></select>
+					</label>
+					<span id="status" class="status" role="status"></span>
+
+					<div class="mode-switch" role="group" aria-label="Mode d'édition">
+						<button type="button" data-mode="visual" aria-pressed="true">Visuel</button>
+						<button type="button" data-mode="source" aria-pressed="false">Markdown</button>
+					</div>
+					<a id="view" class="btn" target="_blank" rel="noopener"><span data-icon="external"></span>Voir la page</a>
+					<button type="button" class="btn icon-only" id="doc-menu" aria-label="Autres actions">
+						<span data-icon="more"></span>
+					</button>
+					<button type="submit" class="btn primary" id="save">Enregistrer</button>
+				</header>
+
+				<div class="doc-scroll">
+					<div class="doc-page">
+						<input id="title" class="doc-title" placeholder="Titre du cours" maxlength="150" autocomplete="off" aria-label="Titre du cours" />
+						<input
+							id="description"
+							class="doc-description"
+							placeholder="Description courte (facultatif), affichée dans la recherche du site"
+							maxlength="300"
+							autocomplete="off"
+							aria-label="Description"
+						/>
+						<label class="doc-url" title="Adresse de la page sur le site">
+							<span id="url-prefix"></span>
+							<input id="slug" placeholder="nom-du-cours" maxlength="60" autocomplete="off" spellcheck="false" aria-label="Nom dans l'adresse" />
+						</label>
+
+						<div id="editor" class="doc-editor"></div>
+						<textarea id="source" class="doc-source" spellcheck="true" aria-label="Contenu en Markdown" hidden></textarea>
+					</div>
+				</div>
+			</form>
+		</main>
+
+		<script>
+			import '../../lib/admin/client/main';
+		</script>
+	</body>
+</html>

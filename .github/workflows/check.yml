@@ -1,0 +1,30 @@
+# Vérifie que le site se construit sans erreur sur chaque pull request : celles faites avec Git
+# comme les propositions envoyées depuis l'éditeur.
+# Le job s'appelle "build" : c'est ce nom qu'il faut choisir comme check obligatoire
+# dans le ruleset de la branche main.
+name: Vérification du build
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code de la PR
+        uses: actions/checkout@v7
+      - name: Installer Node.js (version indiquée dans .nvmrc)
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Installer les dépendances
+        run: npm ci
+      - name: Vérifier les types
+        run: npm run check
+      - name: Construire le site
+        run: npm run build

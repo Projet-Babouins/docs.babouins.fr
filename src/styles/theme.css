@@ -1,0 +1,69 @@
+/*
+	Couleurs de la doc : la même palette que la vitrine www.babouins.fr
+	(dépôt www.babouins.fr, fichier src/styles/global.css). Un fond papier, une encre,
+	UNE seule couleur d'accent (la terre cuite du museau de la mascotte), des filets fins.
+
+	Starlight range ses couleurs dans des variables `--sl-color-*`. Attention au piège :
+	`white` est toujours la couleur de texte la plus forte et `black` toujours le fond,
+	donc leurs valeurs s'inversent entre le thème sombre et le thème clair.
+	Référence : https://starlight.astro.build/fr/guides/css-and-tailwind/
+
+	Si tu changes une couleur ici, pense à la vitrine et à l'éditeur (src/styles/admin.css),
+	et revérifie les contrastes (WCAG AA, 4.5:1 pour le texte).
+*/
+
+/* Thème sombre (celui de Starlight par défaut). */
+:root {
+	--sl-color-white: #ece5da; /* titres */
+	--sl-color-gray-1: #e2dacd;
+	--sl-color-gray-2: #cfc5b7; /* texte courant */
+	--sl-color-gray-3: #a89e91; /* texte secondaire */
+	--sl-color-gray-4: #8a8074;
+	--sl-color-gray-5: #3a332b;
+	--sl-color-gray-6: #1d1915; /* fond secondaire */
+	--sl-color-black: #14110e; /* fond de page */
+
+	--sl-color-accent-low: #2e170c;
+	--sl-color-accent: #c2632f;
+	--sl-color-accent-high: #e39a6f; /* liens */
+
+	--sl-color-bg-nav: var(--sl-color-black);
+	--sl-color-bg-sidebar: var(--sl-color-black);
+	--sl-color-hairline-light: #3a332b;
+	--sl-color-hairline: #3a332b;
+	--sl-color-hairline-shade: #3a332b;
+}
+
+/* Thème clair. */
+:root[data-theme='light'] {
+	--sl-color-white: #1f1a15; /* titres */
+	--sl-color-gray-1: #2b251f;
+	--sl-color-gray-2: #38302a; /* texte courant */
+	--sl-color-gray-3: #5e554b; /* texte secondaire */
+	--sl-color-gray-4: #796e62;
+	--sl-color-gray-5: #d9cfbf;
+	--sl-color-gray-6: #f1ebe1; /* fond secondaire */
+	--sl-color-gray-7: #f6f1e9;
+	--sl-color-black: #faf7f2; /* fond de page */
+
+	--sl-color-accent-low: #f3dfd2;
+	--sl-color-accent: #a8431a; /* liens */
+	--sl-color-accent-high: #7f3012;
+
+	--sl-color-bg-nav: var(--sl-color-black);
+	--sl-color-bg-sidebar: var(--sl-color-black);
+	--sl-color-hairline-light: #d9cfbf;
+	--sl-color-hairline: #d9cfbf;
+	--sl-color-hairline-shade: #d9cfbf;
+}
+
+/* Le nom du site dans l'en-tête : à l'encre, comme sur la vitrine (Starlight le met en accent). */
+.site-title {
+	color: var(--sl-color-white);
+}
+
+/* Voile derrière la fenêtre de recherche : une teinte chaude, comme le reste. */
+:root,
+::backdrop {
+	--sl-color-backdrop-overlay: rgb(20 17 14 / 0.66);
+}

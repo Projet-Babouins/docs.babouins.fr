@@ -1,0 +1,932 @@
+/*
+	Styles de l'espace d'édition (/admin). Thème clair et sombre selon le système.
+	Même palette que la doc (src/styles/theme.css) et que la vitrine www.babouins.fr.
+*/
+
+:root {
+	color-scheme: light dark;
+	--bg: #faf7f2;
+	--surface: #ffffff;
+	--surface-hover: #f1ebe1;
+	--border: #d9cfbf;
+	--text: #1f1a15;
+	--muted: #5e554b;
+	--accent: #a8431a;
+	--accent-hover: #7f3012;
+	--accent-soft: #f3dfd2;
+	--on-accent: #ffffff;
+	--danger: #b91c1c;
+	--success: #15803d;
+	--shadow: 0 8px 28px rgb(28 25 23 / 0.16), 0 1px 3px rgb(28 25 23 / 0.12);
+	--radius: 8px;
+	--font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #14110e;
+		--surface: #1d1915;
+		--surface-hover: #2a241e;
+		--border: #3a332b;
+		--text: #ece5da;
+		--muted: #a89e91;
+		--accent: #e39a6f;
+		--accent-hover: #f0b892;
+		--accent-soft: #3d2013;
+		--on-accent: #14110e;
+		--danger: #f87171;
+		--success: #4ade80;
+		--shadow: 0 8px 28px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+/* L'attribut `hidden` doit gagner contre les `display` définis plus bas. */
+[hidden] {
+	display: none !important;
+}
+body {
+	margin: 0;
+	height: 100vh;
+	display: grid;
+	grid-template-columns: 19rem 1fr;
+	font: 14px/1.5 var(--font);
+	color: var(--text);
+	background: var(--bg);
+}
+button,
+input,
+select,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+kbd {
+	padding: 0.05rem 0.35rem;
+	border: 1px solid var(--border);
+	border-bottom-width: 2px;
+	border-radius: 4px;
+	background: var(--surface);
+	font: 0.85em var(--mono);
+}
+
+/* --- Boutons ------------------------------------------------------------- */
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.45rem;
+	height: 2.25rem;
+	padding: 0 0.85rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	font-weight: 500;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		background 0.12s,
+		border-color 0.12s;
+}
+.btn:hover {
+	background: var(--surface-hover);
+}
+.btn:disabled {
+	opacity: 0.6;
+	cursor: progress;
+}
+.btn.primary {
+	border-color: transparent;
+	background: var(--accent);
+	color: var(--on-accent);
+	font-weight: 600;
+}
+.btn.primary:hover {
+	background: var(--accent-hover);
+}
+.btn.danger-solid {
+	border-color: transparent;
+	background: var(--danger);
+	color: var(--on-accent);
+	font-weight: 600;
+}
+.btn.icon-only {
+	width: 2.25rem;
+	padding: 0;
+	flex-shrink: 0;
+}
+.btn.ghost {
+	border-color: transparent;
+	background: none;
+}
+.btn.ghost:hover {
+	background: var(--surface-hover);
+}
+.grow {
+	flex: 1;
+}
+.mobile-only {
+	display: none;
+}
+
+/* --- Barre latérale -------------------------------------------------------- */
+
+.sidebar {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	min-height: 0;
+	padding: 0.9rem 0.75rem 0.6rem;
+	border-right: 1px solid var(--border);
+	background: var(--surface);
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0 0.25rem;
+	color: inherit;
+	font-size: 1.05rem;
+	font-weight: 700;
+	text-decoration: none;
+}
+.brand small {
+	margin-left: 0.15rem;
+	color: var(--muted);
+	font-size: 0.8rem;
+	font-weight: 500;
+}
+.sidebar-actions {
+	display: flex;
+	gap: 0.5rem;
+}
+.search {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	height: 2.25rem;
+	padding: 0 0.7rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--bg);
+	color: var(--muted);
+}
+.search:focus-within {
+	border-color: var(--accent);
+}
+.search input {
+	flex: 1;
+	min-width: 0;
+	border: none;
+	background: none;
+	color: var(--text);
+	outline: none;
+}
+.sidebar-foot {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding-top: 0.6rem;
+	border-top: 1px solid var(--border);
+}
+.sidebar-foot img {
+	border-radius: 50%;
+}
+.user-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-weight: 500;
+}
+
+/* --- Arborescence ---------------------------------------------------------- */
+
+.tree {
+	flex: 1;
+	min-height: 0;
+	margin: 0 -0.25rem;
+	padding: 0 0.25rem 2rem;
+	overflow-y: auto;
+	border-radius: var(--radius);
+}
+.tree.drop-root {
+	box-shadow: inset 0 -3px 0 var(--accent);
+}
+.tree ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.tree ul ul {
+	margin-left: 0.85rem;
+	padding-left: 0.4rem;
+	border-left: 1px solid var(--border);
+}
+.tree-row {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin: 1px 0;
+	border-radius: 6px;
+}
+.tree-row:hover,
+.tree-row:focus-within {
+	background: var(--surface-hover);
+}
+.tree-row[aria-current] {
+	background: var(--accent-soft);
+	color: var(--accent);
+	font-weight: 600;
+}
+.tree-row.dragging {
+	opacity: 0.4;
+}
+.tree-row.drop-inside {
+	background: var(--accent-soft);
+	box-shadow: inset 0 0 0 2px var(--accent);
+}
+.tree-row.drop-before::before,
+.tree-row.drop-after::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 3px;
+	border-radius: 2px;
+	background: var(--accent);
+	pointer-events: none;
+}
+.tree-row.drop-before::before {
+	top: -2px;
+}
+.tree-row.drop-after::after {
+	bottom: -2px;
+}
+.tree-main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.35rem 0.3rem;
+	border: none;
+	border-radius: 6px;
+	background: none;
+	font-weight: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.tree-main svg {
+	flex-shrink: 0;
+	color: var(--muted);
+}
+.tree-row[aria-current] .tree-main svg {
+	color: inherit;
+}
+.chevron {
+	display: inline-flex;
+	width: 14px;
+	flex-shrink: 0;
+	transition: transform 0.12s;
+}
+.chevron.open {
+	transform: rotate(90deg);
+}
+.tree-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.tree-more {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.6rem;
+	height: 1.6rem;
+	margin-right: 0.2rem;
+	border: none;
+	border-radius: 5px;
+	background: none;
+	color: var(--muted);
+	opacity: 0;
+	cursor: pointer;
+}
+.tree-row:hover .tree-more,
+.tree-row:focus-within .tree-more {
+	opacity: 1;
+}
+.tree-more:hover {
+	background: var(--border);
+	color: var(--text);
+}
+.tree-empty {
+	padding: 0.3rem 0.5rem;
+	color: var(--muted);
+	font-size: 0.85rem;
+	font-style: italic;
+}
+
+/* --- Zone principale ----------------------------------------------------- */
+
+main {
+	min-width: 0;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+.welcome {
+	margin: auto;
+	padding: 2rem;
+	max-width: 30rem;
+	text-align: center;
+}
+.welcome h1 {
+	margin: 1rem 0 0.25rem;
+	font-size: 1.5rem;
+}
+.welcome p {
+	margin: 0 0 1.25rem;
+	color: var(--muted);
+}
+.tips {
+	margin: 2rem 0 0;
+	padding: 1rem 1.25rem 1rem 2rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--muted);
+	text-align: left;
+}
+.tips li + li {
+	margin-top: 0.35rem;
+}
+
+.doc {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+.doc-bar {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.6rem 1rem;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+.folder-picker {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	height: 2.25rem;
+	padding-left: 0.7rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	color: var(--muted);
+}
+.folder-picker:focus-within {
+	border-color: var(--accent);
+}
+.folder-picker select {
+	max-width: 16rem;
+	height: 100%;
+	padding-right: 0.5rem;
+	border: none;
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	font-weight: 500;
+	outline: none;
+	cursor: pointer;
+}
+.status {
+	margin-right: auto;
+	padding: 0.15rem 0.6rem;
+	border-radius: 999px;
+	color: var(--muted);
+	font-size: 0.85rem;
+}
+.status.dirty {
+	background: var(--accent-soft);
+	color: var(--accent);
+}
+.status.saved {
+	color: var(--success);
+}
+.mode-switch {
+	display: flex;
+	padding: 2px;
+	border-radius: var(--radius);
+	background: var(--bg);
+	border: 1px solid var(--border);
+}
+.mode-switch button {
+	height: calc(2.25rem - 6px);
+	padding: 0 0.7rem;
+	border: none;
+	border-radius: 6px;
+	background: none;
+	color: var(--muted);
+	font-weight: 500;
+	cursor: pointer;
+}
+.mode-switch button[aria-pressed='true'] {
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+}
+
+.doc-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+.doc-page {
+	max-width: 54rem;
+	min-height: 100%;
+	margin: 0 auto;
+	padding: 2.5rem 3rem 6rem;
+	display: flex;
+	flex-direction: column;
+}
+.doc-title,
+.doc-description,
+.doc-url input {
+	width: 100%;
+	border: none;
+	background: none;
+	outline: none;
+}
+.doc-title {
+	font-size: 2.1rem;
+	font-weight: 750;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+}
+.doc-description {
+	margin-top: 0.4rem;
+	color: var(--muted);
+	font-size: 1.05rem;
+}
+.doc-title::placeholder,
+.doc-description::placeholder {
+	color: color-mix(in srgb, var(--muted) 60%, transparent);
+}
+.doc-url {
+	display: flex;
+	align-items: baseline;
+	margin-top: 0.75rem;
+	padding: 0.3rem 0.6rem;
+	width: fit-content;
+	max-width: 100%;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	color: var(--muted);
+	font: 0.8rem var(--mono);
+}
+.doc-url:focus-within {
+	border-color: var(--accent);
+}
+.doc-url input {
+	width: 22ch;
+	color: var(--text);
+	font: inherit;
+}
+.doc-source {
+	flex: 1;
+	min-height: 60vh;
+	margin-top: 1.5rem;
+	padding: 1rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	font: 14px/1.7 var(--mono);
+	resize: none;
+	outline: none;
+}
+.doc-source:focus {
+	border-color: var(--accent);
+}
+
+/* --- Éditeur visuel (Milkdown Crepe) : couleurs branchées sur le thème ---- */
+
+.doc-editor {
+	flex: 1;
+	margin-top: 1.5rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+}
+.doc-editor .milkdown {
+	--crepe-color-background: var(--surface);
+	--crepe-color-on-background: var(--text);
+	--crepe-color-surface: var(--surface);
+	--crepe-color-surface-low: var(--bg);
+	--crepe-color-on-surface: var(--text);
+	--crepe-color-on-surface-variant: var(--muted);
+	--crepe-color-outline: var(--muted);
+	--crepe-color-primary: var(--accent);
+	--crepe-color-secondary: var(--accent-soft);
+	--crepe-color-on-secondary: var(--text);
+	--crepe-color-inverse: var(--text);
+	--crepe-color-on-inverse: var(--surface);
+	--crepe-color-inline-code: var(--accent);
+	--crepe-color-error: var(--danger);
+	--crepe-color-hover: var(--surface-hover);
+	--crepe-color-selected: var(--accent-soft);
+	--crepe-color-inline-area: var(--surface-hover);
+	--crepe-base-font-size: 16px;
+	--crepe-font-title: var(--font);
+	--crepe-font-default: var(--font);
+	--crepe-font-code: var(--mono);
+	--crepe-shadow-1: var(--shadow);
+	--crepe-shadow-2: var(--shadow);
+	border-radius: var(--radius);
+}
+.doc-editor .milkdown .milkdown-top-bar {
+	border-radius: var(--radius) var(--radius) 0 0;
+}
+.doc-editor .milkdown .ProseMirror {
+	min-height: 50vh;
+	padding: 1.5rem 3.5rem 4rem;
+}
+.doc-editor .milkdown .ProseMirror :is(h2, h3, h4) {
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+.doc-editor .milkdown .ProseMirror h2 {
+	font-size: 1.6rem;
+}
+.doc-editor .milkdown .ProseMirror h3 {
+	font-size: 1.3rem;
+}
+.doc-editor .milkdown .ProseMirror h4 {
+	font-size: 1.1rem;
+}
+
+/* --- Propositions et relectures ------------------------------------------------ */
+
+.badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.05rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	color: var(--muted);
+	font-size: 0.8rem;
+	font-weight: 500;
+	white-space: nowrap;
+}
+.badge.ok {
+	border-color: transparent;
+	background: color-mix(in srgb, var(--success) 16%, transparent);
+	color: var(--success);
+}
+.badge.warn {
+	border-color: transparent;
+	background: var(--accent-soft);
+	color: var(--accent);
+}
+.badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	margin: 0;
+}
+#open-reviews {
+	justify-content: flex-start;
+}
+#open-reviews .badge {
+	margin-left: auto;
+}
+.user-name small {
+	display: block;
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 400;
+	line-height: 1.2;
+}
+#toggle-direct[aria-pressed='true'] {
+	background: var(--accent-soft);
+	color: var(--accent);
+}
+.btn.danger {
+	color: var(--danger);
+}
+
+/* Bandeau : où partent les enregistrements (proposition en cours, ou publication directe). */
+.mode-banner {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.45rem 1rem;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--muted);
+}
+.mode-banner.warn {
+	background: var(--accent-soft);
+	color: var(--accent);
+}
+.mode-banner span {
+	flex: 1;
+	min-width: 0;
+}
+.mode-banner svg {
+	flex-shrink: 0;
+}
+.mode-banner .btn {
+	height: 1.9rem;
+}
+
+.reviews {
+	gap: 0.75rem;
+}
+.reviews h2 {
+	margin: 1.25rem 0 0;
+	font-size: 1.1rem;
+}
+.reviews p,
+.reviews ul {
+	margin: 0;
+}
+.reviews a {
+	color: var(--accent);
+}
+.review-title {
+	margin: 0;
+	font-size: 1.7rem;
+	line-height: 1.25;
+}
+.review-intro,
+.review-empty,
+.review-other,
+.review-meta {
+	color: var(--muted);
+}
+.review-meta {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: 0.9rem;
+}
+.avatar {
+	border-radius: 50%;
+}
+.review-card {
+	display: grid;
+	gap: 0.4rem;
+	padding: 0.9rem 1rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	text-align: left;
+	cursor: pointer;
+}
+.review-card:hover {
+	border-color: var(--accent);
+}
+.review-card strong {
+	font-size: 1.05rem;
+}
+.review-state {
+	padding: 0.6rem 0.8rem;
+	border-left: 3px solid var(--accent);
+	border-radius: 0 var(--radius) var(--radius) 0;
+	background: var(--surface);
+}
+.review-files {
+	padding-left: 1.2rem;
+	font-family: var(--mono);
+	font-size: 0.9rem;
+}
+.link {
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--accent);
+	font: inherit;
+	text-align: left;
+	text-decoration: underline;
+	cursor: pointer;
+}
+.review-list {
+	display: grid;
+	gap: 0.6rem;
+	padding: 0;
+	list-style: none;
+}
+.review-list li {
+	padding: 0.6rem 0.8rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+}
+.review-list li.approved svg {
+	color: var(--success);
+}
+.review-list li.changes svg {
+	color: var(--accent);
+}
+.review-list p {
+	margin-top: 0.35rem;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.review-message {
+	width: 100%;
+	padding: 0.6rem 0.8rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	resize: vertical;
+	outline: none;
+}
+.review-message:focus {
+	border-color: var(--accent);
+}
+.review-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+/* Page relue : le même rendu que l'éditeur, mais on ne peut rien y écrire. */
+.doc-editor.review-preview {
+	flex: none;
+	margin-top: 0;
+}
+.doc-editor.review-preview .milkdown .ProseMirror {
+	min-height: 0;
+	padding-bottom: 1.5rem;
+}
+
+/* --- Menus, dialogues, notifications --------------------------------------- */
+
+.menu {
+	position: fixed;
+	z-index: 100;
+	min-width: 13rem;
+	padding: 0.3rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	box-shadow: var(--shadow);
+}
+.menu button {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.45rem 0.6rem;
+	border: none;
+	border-radius: 5px;
+	background: none;
+	text-align: left;
+	cursor: pointer;
+}
+.menu button:hover,
+.menu button:focus-visible {
+	background: var(--surface-hover);
+	outline: none;
+}
+.menu button.danger {
+	color: var(--danger);
+}
+
+.dialog {
+	width: min(26rem, calc(100vw - 2rem));
+	padding: 1.5rem;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: var(--shadow);
+}
+.dialog::backdrop {
+	background: rgb(0 0 0 / 0.45);
+}
+.dialog h2 {
+	margin: 0 0 0.75rem;
+	font-size: 1.15rem;
+}
+.dialog p {
+	margin: 0 0 0.75rem;
+	color: var(--muted);
+}
+.dialog label {
+	display: grid;
+	gap: 0.3rem;
+	margin-bottom: 0.9rem;
+	font-weight: 500;
+}
+.dialog input {
+	height: 2.4rem;
+	padding: 0 0.7rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--bg);
+	font-weight: 400;
+}
+.dialog input:focus {
+	border-color: var(--accent);
+	outline: none;
+}
+.dialog small {
+	color: var(--muted);
+	font-weight: 400;
+}
+.dialog-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.5rem;
+	margin-top: 1.25rem;
+}
+
+.toasts {
+	position: fixed;
+	right: 1rem;
+	bottom: 1rem;
+	z-index: 200;
+	display: grid;
+	gap: 0.5rem;
+	max-width: min(24rem, calc(100vw - 2rem));
+}
+.toast {
+	padding: 0.7rem 1rem;
+	border: 1px solid var(--border);
+	border-left: 4px solid var(--success);
+	border-radius: var(--radius);
+	background: var(--surface);
+	box-shadow: var(--shadow);
+	animation: toast-in 0.18s ease-out;
+}
+.toast.error {
+	border-left-color: var(--danger);
+}
+@keyframes toast-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	* {
+		animation: none !important;
+		transition: none !important;
+	}
+}
+
+/* --- Écrans étroits : la barre latérale devient un tiroir ---------------------- */
+
+@media (max-width: 56rem) {
+	body {
+		grid-template-columns: 1fr;
+	}
+	.mobile-only {
+		display: inline-flex;
+	}
+	.sidebar {
+		position: fixed;
+		inset: 0 auto 0 0;
+		z-index: 50;
+		width: min(20rem, 88vw);
+		transform: translateX(-100%);
+		transition: transform 0.18s;
+		box-shadow: var(--shadow);
+	}
+	body.sidebar-open .sidebar {
+		transform: none;
+	}
+	.welcome #welcome-menu {
+		position: absolute;
+		top: 0.75rem;
+		left: 0.75rem;
+	}
+	.doc-bar {
+		flex-wrap: wrap;
+	}
+	.doc-bar #view {
+		display: none;
+	}
+	.doc-page {
+		padding: 1.5rem 1rem 4rem;
+	}
+	.doc-title {
+		font-size: 1.6rem;
+	}
+	.doc-editor .milkdown .ProseMirror {
+		padding: 1rem 1.25rem 3rem;
+	}
+}
