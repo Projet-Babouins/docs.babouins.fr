@@ -2,12 +2,6 @@
 	"items": [
 		{
 			"type": "folder",
-			"slug": "exemple",
-			"label": "Exemple",
-			"items": []
-		},
-		{
-			"type": "folder",
 			"slug": "sisr",
 			"label": "SISR",
 			"items": [
