@@ -4,7 +4,19 @@
 			"type": "folder",
 			"slug": "sisr",
 			"label": "SISR",
-			"items": []
+			"items": [
+				{
+					"type": "course",
+					"slug": "creation-d-une-clef-ssh",
+					"title": "Création d'une clef SSH"
+				},
+				{
+					"type": "folder",
+					"slug": "linux",
+					"label": "Linux",
+					"items": []
+				}
+			]
 		}
 	]
 }
