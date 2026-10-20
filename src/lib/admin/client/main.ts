@@ -278,7 +278,8 @@ async function newCourse(folder: string) {
  * Sinon : nouvelle page, dans le dossier du sujet. Rien n'est enregistré : on relit d'abord.
  */
 async function importFromForum(topic: number) {
-	const response = await fetch(`${FORUM_URL}/api/brouillon/${topic}`).catch(() => null);
+	// Avec le cookie de session du forum, qui est réservé aux membres.
+	const response = await fetch(`${FORUM_URL}/api/brouillon/${topic}`, { credentials: 'include' }).catch(() => null);
 	const draft = (await response?.json().catch(() => null)) as {
 		error?: string;
 		title: string;
@@ -286,6 +287,7 @@ async function importFromForum(topic: number) {
 		section: string;
 		doc: { id: string; kind: 'page' | 'folder' } | null;
 	} | null;
+	if (response?.status === 401) throw new Error('Connecte-toi d’abord au forum, puis relance « Transformer en page de doc ».');
 	if (!response?.ok || !draft) throw new Error(draft?.error ?? 'Impossible de lire ce sujet sur le forum.');
 
 	if (draft.doc?.kind === 'page') {
