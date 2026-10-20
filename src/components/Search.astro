@@ -1,0 +1,94 @@
+---
+// Remplace la recherche de Starlight (voir `components` dans astro.config.mjs) : la fenêtre
+// d'origine (Pagefind, qui cherche dans la doc), plus les sujets du forum qui répondent à la
+// même recherche, affichés en dessous. Recherche commune : une question, deux sources.
+import { FORUM_URL } from 'astro:env/client';
+import Default from '@astrojs/starlight/components/Search.astro';
+---
+
+<Default {...Astro.props}><slot /></Default>
+<forum-search-results data-forum={FORUM_URL}></forum-search-results>
+
+<script>
+	type Hit = { title: string; url: string; answered: boolean };
+
+	/** Sujets du forum, ajoutés sous les résultats de la doc pendant qu'on tape. */
+	class ForumSearchResults extends HTMLElement {
+		/** Dernière recherche tapée : une réponse arrivée pour une recherche plus ancienne est ignorée. */
+		last = '';
+
+		connectedCallback() {
+			const dialog = document.querySelector<HTMLDialogElement>('site-search dialog');
+			const container = dialog?.querySelector('.search-container');
+			if (!dialog || !container) return; // en développement, Pagefind n'existe pas
+
+			const box = document.createElement('section');
+			box.className = 'forum-results';
+			box.hidden = true;
+			container.append(box);
+
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			dialog.addEventListener('input', (event) => {
+				this.last = (event.target as HTMLInputElement).value?.trim() ?? '';
+				clearTimeout(timer);
+				timer = setTimeout(() => void this.show(box, this.last), 300);
+			});
+		}
+
+		async show(box: HTMLElement, query: string) {
+			if (query.length < 3) return void (box.hidden = true);
+			try {
+				const response = await fetch(`${this.dataset.forum}/api/recherche?n=5&q=${encodeURIComponent(query)}`);
+				const { topics, more } = (await response.json()) as { topics: Hit[]; more: string };
+				if (query !== this.last) return; // une autre recherche a été tapée entre-temps
+
+				const title = Object.assign(document.createElement('h3'), { textContent: 'Sur le forum' });
+				const list = document.createElement('ul');
+				list.append(
+					...topics.map((topic) => {
+						const li = document.createElement('li');
+						li.append(Object.assign(document.createElement('a'), { href: topic.url, textContent: topic.title }));
+						if (topic.answered) li.append(Object.assign(document.createElement('span'), { textContent: ' · résolue' }));
+						return li;
+					}),
+				);
+				const link = Object.assign(document.createElement('a'), {
+					href: topics.length ? more : `${this.dataset.forum}/nouveau?titre=${encodeURIComponent(query)}`,
+					textContent: topics.length ? 'Tout voir sur le forum' : 'Rien sur le forum : poser la question',
+					className: 'more',
+				});
+				box.replaceChildren(title, ...(topics.length ? [list] : []), link);
+				box.hidden = false;
+			} catch {
+				box.hidden = true;
+			}
+		}
+	}
+	customElements.define('forum-search-results', ForumSearchResults);
+</script>
+
+<style is:global>
+	@layer starlight.components {
+		.forum-results {
+			margin: 1rem 0 0;
+			padding: 1rem;
+			border-top: 1px solid var(--sl-color-hairline);
+		}
+		.forum-results h3 {
+			margin: 0 0 0.5rem;
+			color: var(--sl-color-white);
+			font-size: var(--sl-text-base);
+		}
+		.forum-results ul {
+			margin: 0 0 0.75rem;
+			padding-left: 1rem;
+		}
+		.forum-results li {
+			margin-bottom: 0.25rem;
+			color: var(--sl-color-gray-3);
+		}
+		.forum-results .more {
+			font-weight: 600;
+		}
+	}
+</style>

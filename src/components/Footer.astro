@@ -1,0 +1,9 @@
+---
+// Remplace le pied de page de Starlight (voir `components` dans astro.config.mjs) :
+// le bloc « Questions sur cette page » (le forum), puis le pied de page d'origine.
+import Default from '@astrojs/starlight/components/Footer.astro';
+import Questions from './Questions.astro';
+---
+
+<Questions />
+<Default><slot /></Default>

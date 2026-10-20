@@ -41,6 +41,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 		// Venu du lien « Modifier cette page » : la page demandée sera rouverte après la connexion.
 		const page = context.url.searchParams.get('page');
 		if (page) context.session?.set('openPage', page);
+		// Venu du bouton « Transformer en page de doc » du forum : l'import reprendra après la connexion.
+		const fromForum = Number(context.url.searchParams.get('depuis-forum'));
+		if (Number.isInteger(fromForum) && fromForum > 0) context.session?.set('openForumTopic', fromForum);
 		return context.redirect('/admin/login');
 	}
 

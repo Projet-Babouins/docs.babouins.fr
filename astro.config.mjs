@@ -42,6 +42,9 @@ export default defineConfig({
 			// Identifiants de la GitHub App qui sert à la connexion (voir .env.example).
 			OAUTH_CLIENT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
 			OAUTH_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
+			// Adresse du forum : bloc « Questions sur cette page », recherche commune, import d'un
+			// sujet dans l'éditeur. Lue au build, et aussi dans le navigateur.
+			FORUM_URL: envField.string({ context: 'client', access: 'public', default: 'https://forum.babouins.fr' }),
 			// Développement uniquement : connecte directement ce login, sans passer par GitHub.
 			ADMIN_DEV_LOGIN: envField.string({ context: 'server', access: 'secret', optional: true }),
 			// Développement uniquement : `github` pour essayer le vrai stockage au lieu du disque local.
@@ -90,6 +93,12 @@ export default defineConfig({
 				Head: './src/components/Head.astro',
 				// « Modifier cette page » : dans l'éditeur du site, ou sur GitHub.
 				EditLink: './src/components/EditLink.astro',
+				// Bloc « Questions sur cette page » (le forum), au-dessus du pied de page.
+				Footer: './src/components/Footer.astro',
+				// Les sujets du forum sous les résultats de la recherche.
+				Search: './src/components/Search.astro',
+				// Lien « Forum » dans l'en-tête.
+				SocialIcons: './src/components/SocialIcons.astro',
 			},
 		}),
 	],
