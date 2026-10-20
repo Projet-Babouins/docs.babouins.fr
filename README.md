@@ -259,6 +259,8 @@ Le forum ([dépôt forum.babouins.fr](https://github.com/Projet-Babouins/forum.b
 
 « Transformer en page de doc », sur un sujet du forum, ouvre `/admin?depuis-forum=<n>` : l'éditeur lit le brouillon, l'ajoute à la fin de la page dont parle le sujet (ou crée une nouvelle page dans son dossier) et ne l'enregistre pas. La personne relit, complète, enregistre : c'est une proposition comme une autre, avec ses deux validations.
 
+Le forum est réservé aux membres : ces trois adresses ne répondent qu'avec le cookie de session du forum, que le navigateur envoie car les deux sites sont sur `babouins.fr` (`credentials: 'include'`). Pas connecté au forum : le bloc propose de s'y connecter, et la recherche ne montre que la doc.
+
 L'adresse du forum est `FORUM_URL` (par défaut `https://forum.babouins.fr`, à mettre à `http://localhost:4322` dans `.env` pour développer les deux ensemble). Si le forum ne répond pas, la doc n'en souffre pas : le bloc garde son lien "Poser une question", la recherche ne montre que la doc.
 
 ## 📄 Licences

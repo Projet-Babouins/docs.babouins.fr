@@ -38,7 +38,9 @@ import Default from '@astrojs/starlight/components/Search.astro';
 		async show(box: HTMLElement, query: string) {
 			if (query.length < 3) return void (box.hidden = true);
 			try {
-				const response = await fetch(`${this.dataset.forum}/api/recherche?n=5&q=${encodeURIComponent(query)}`);
+				// Avec le cookie de session du forum : il est réservé aux membres. Pas connecté : rien à montrer.
+				const response = await fetch(`${this.dataset.forum}/api/recherche?n=5&q=${encodeURIComponent(query)}`, { credentials: 'include' });
+				if (!response.ok) return void (box.hidden = true);
 				const { topics, more } = (await response.json()) as { topics: Hit[]; more: string };
 				if (query !== this.last) return; // une autre recherche a été tapée entre-temps
 

@@ -1,8 +1,10 @@
 ---
 // Bloc « Questions sur cette page », en bas de chaque page de la doc : les sujets du forum
 // (forum.babouins.fr) qui parlent de cette page, et un lien pour en poser une.
-// La page reste statique : la liste est demandée au forum par le navigateur. Sans JavaScript,
-// ou si le forum ne répond pas, il reste le lien pour poser une question.
+// La page reste statique : la liste est demandée au forum par le navigateur. Le forum est réservé
+// aux membres : la demande part avec son cookie de session (les deux sites sont sur babouins.fr).
+// Pas connecté au forum : un lien pour s'y connecter. Sans JavaScript, ou si le forum ne répond
+// pas, il reste le lien pour poser une question.
 import { FORUM_URL } from 'astro:env/client';
 import { COURSES_DIR } from '../lib/admin/paths';
 
@@ -17,7 +19,10 @@ const ask = page && `${FORUM_URL}/nouveau?doc=${encodeURIComponent(page)}`;
 	page && (
 		<section class="forum-questions print:hidden" aria-labelledby="questions-forum">
 			<h2 id="questions-forum">Questions sur cette page</h2>
-			<babouins-questions data-api={`${FORUM_URL}/api/sujets?doc=${encodeURIComponent(page)}`}>
+			<babouins-questions
+				data-api={`${FORUM_URL}/api/sujets?doc=${encodeURIComponent(page)}`}
+				data-login={`${FORUM_URL}/connexion?retour=${encodeURIComponent(`/?doc=${page}`)}`}
+			>
 				<p class="hint">Un point pas clair, une commande qui ne marche pas ? Demande à la classe sur le forum.</p>
 				<ul hidden />
 			</babouins-questions>
@@ -44,7 +49,12 @@ const ask = page && `${FORUM_URL}/nouveau?doc=${encodeURIComponent(page)}`;
 			const hint = this.querySelector<HTMLElement>('.hint')!;
 			const all = this.parentElement?.querySelector<HTMLAnchorElement>('.all');
 			try {
-				const response = await fetch(this.dataset.api!);
+				const response = await fetch(this.dataset.api!, { credentials: 'include' });
+				if (response.status === 401) {
+					const login = Object.assign(document.createElement('a'), { href: this.dataset.login!, textContent: 'Connecte-toi au forum' });
+					hint.replaceChildren(login, ' pour voir les questions posées sur cette page.');
+					return;
+				}
 				if (!response.ok) return;
 				const { topics, total } = (await response.json()) as { topics: Topic[]; total: number };
 				if (topics.length === 0) return;
