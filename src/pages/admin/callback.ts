@@ -33,9 +33,11 @@ export const GET: APIRoute = async ({ session, redirect, url }) => {
 
 	const openPage = await session?.get('openPage'); // page demandée avant la connexion (voir middleware.ts)
 	session?.delete('openPage');
+	const openForumTopic = await session?.get('openForumTopic');
+	session?.delete('openForumTopic');
 	// Nouvel identifiant de session à la connexion (contre la fixation de session).
 	await session?.regenerate();
 	session?.set('user', authenticated.user);
 	session?.set('githubToken', authenticated.token);
-	return redirect(adminUrl(openPage));
+	return redirect(adminUrl(openPage, openForumTopic));
 };

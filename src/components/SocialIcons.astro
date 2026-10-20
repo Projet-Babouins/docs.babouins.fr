@@ -1,0 +1,23 @@
+---
+// Remplace les icônes de l'en-tête de Starlight (voir `components` dans astro.config.mjs) :
+// un lien vers le forum, puis les icônes d'origine (GitHub).
+import { FORUM_URL } from 'astro:env/client';
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+---
+
+<a class="forum" href={FORUM_URL}>Forum</a>
+<Default><slot /></Default>
+
+<style>
+	@layer starlight.core {
+		.forum {
+			color: var(--sl-color-gray-2);
+			font-size: var(--sl-text-sm);
+			font-weight: 600;
+			text-decoration: none;
+		}
+		.forum:hover {
+			color: var(--sl-color-white);
+		}
+	}
+</style>

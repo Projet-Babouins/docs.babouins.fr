@@ -1,0 +1,131 @@
+---
+// Bloc « Questions sur cette page », en bas de chaque page de la doc : les sujets du forum
+// (forum.babouins.fr) qui parlent de cette page, et un lien pour en poser une.
+// La page reste statique : la liste est demandée au forum par le navigateur. Sans JavaScript,
+// ou si le forum ne répond pas, il reste le lien pour poser une question.
+import { FORUM_URL } from 'astro:env/client';
+import { COURSES_DIR } from '../lib/admin/paths';
+
+const { entry } = Astro.locals.starlightRoute;
+const file = entry.filePath ?? '';
+// Seulement sur les pages de la doc (pas sur l'accueil).
+const page = file.startsWith(`${COURSES_DIR}/`) && /\.mdx?$/.test(file) ? file.slice(COURSES_DIR.length + 1).replace(/\.mdx?$/, '') : null;
+const ask = page && `${FORUM_URL}/nouveau?doc=${encodeURIComponent(page)}`;
+---
+
+{
+	page && (
+		<section class="forum-questions print:hidden" aria-labelledby="questions-forum">
+			<h2 id="questions-forum">Questions sur cette page</h2>
+			<babouins-questions data-api={`${FORUM_URL}/api/sujets?doc=${encodeURIComponent(page)}`}>
+				<p class="hint">Un point pas clair, une commande qui ne marche pas ? Demande à la classe sur le forum.</p>
+				<ul hidden />
+			</babouins-questions>
+			<p class="links">
+				<a href={ask}>Poser une question sur cette page</a>
+				<a class="all" href={`${FORUM_URL}/?doc=${encodeURIComponent(page)}`} hidden>
+					Tous les sujets
+				</a>
+			</p>
+		</section>
+	)
+}
+
+<script>
+	/**
+	 * Élément personnalisé : il se remplit tout seul quand il entre dans la page. C'est aussi vrai
+	 * après une mise à jour douce (lib/live-update.ts), qui remplace la zone du texte sans recharger.
+	 */
+	type Topic = { title: string; url: string; answered: boolean; kind: string; replies: number };
+
+	class BabouinsQuestions extends HTMLElement {
+		async connectedCallback() {
+			const list = this.querySelector('ul')!;
+			const hint = this.querySelector<HTMLElement>('.hint')!;
+			const all = this.parentElement?.querySelector<HTMLAnchorElement>('.all');
+			try {
+				const response = await fetch(this.dataset.api!);
+				if (!response.ok) return;
+				const { topics, total } = (await response.json()) as { topics: Topic[]; total: number };
+				if (topics.length === 0) return;
+				list.replaceChildren(
+					...topics.map((topic) => {
+						const li = document.createElement('li');
+						const link = Object.assign(document.createElement('a'), { href: topic.url, textContent: topic.title });
+						const state = Object.assign(document.createElement('span'), {
+							className: topic.answered ? 'state solved' : 'state',
+							textContent: topic.answered ? 'Résolue' : `${topic.replies} réponse${topic.replies > 1 ? 's' : ''}`,
+						});
+						li.append(link, state);
+						return li;
+					}),
+				);
+				list.hidden = false;
+				hint.hidden = true;
+				if (all && total > topics.length) {
+					all.textContent = `Les ${total} sujets`;
+					all.hidden = false;
+				}
+			} catch {
+				// Forum injoignable : le lien pour poser une question suffit.
+			}
+		}
+	}
+	if (!customElements.get('babouins-questions')) customElements.define('babouins-questions', BabouinsQuestions);
+</script>
+
+<style>
+	@layer starlight.core {
+		.forum-questions {
+			margin-top: 3rem;
+			padding: 1rem 1.25rem;
+			border: 1px solid var(--sl-color-hairline);
+			border-left: 3px solid var(--sl-color-accent);
+			border-radius: 0.5rem;
+		}
+
+		h2 {
+			margin: 0 0 0.5rem;
+			color: var(--sl-color-white);
+			font-size: var(--sl-text-lg);
+		}
+
+		.hint {
+			margin: 0;
+			color: var(--sl-color-gray-3);
+		}
+
+		ul {
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+
+		li {
+			display: flex;
+			justify-content: space-between;
+			gap: 1rem;
+			padding-block: 0.35rem;
+			border-bottom: 1px solid var(--sl-color-hairline);
+		}
+
+		.state {
+			flex: none;
+			color: var(--sl-color-gray-3);
+			font-size: var(--sl-text-sm);
+		}
+
+		.state.solved {
+			color: var(--sl-color-green-high);
+		}
+
+		.links {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-between;
+			gap: 0.5rem 1.5rem;
+			margin: 0.75rem 0 0;
+			font-weight: 600;
+		}
+	}
+</style>

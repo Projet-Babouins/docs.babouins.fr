@@ -31,6 +31,8 @@ declare namespace App {
 		oauthState: string;
 		/** Page à rouvrir dans l'éditeur après la connexion (lien « Modifier cette page »). */
 		openPage: string;
+		/** Sujet du forum à importer après la connexion (bouton « Transformer en page de doc »). */
+		openForumTopic: number;
 	}
 
 	/** Données attachées à la requête par le middleware. */

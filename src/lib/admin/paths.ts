@@ -67,8 +67,12 @@ export function courseFilePath(id: string): string {
 /**
  * Adresse de l'éditeur, ouvert sur une page si son identifiant est valide. Sert au lien « Modifier
  * cette page » du site, et au retour de connexion : rien d'autre qu'un identifiant vérifié n'y entre.
+ * Avec `fromForum`, l'éditeur importe ce sujet du forum (bouton « Transformer en page de doc »).
  */
-export const adminUrl = (id?: string | null) => (id && isValidCourseId(id) ? `/admin?page=${encodeURIComponent(id)}` : '/admin');
+export function adminUrl(id?: string | null, fromForum?: number | null): string {
+	if (fromForum && Number.isInteger(fromForum) && fromForum > 0) return `/admin?depuis-forum=${fromForum}`;
+	return id && isValidCourseId(id) ? `/admin?page=${encodeURIComponent(id)}` : '/admin';
+}
 
 /** URL publique de la page d'un cours. */
 export const courseUrl = (id: string) => `${COURSES_URL}/${id}/`;

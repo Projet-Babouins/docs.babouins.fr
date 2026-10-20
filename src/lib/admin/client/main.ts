@@ -3,6 +3,7 @@
  * le formulaire du cours et l'éditeur. Il ne parle qu'à l'API /api/admin ;
  * aucune règle de sécurité ne vit ici.
  */
+import { FORUM_URL } from 'astro:env/client';
 import { COURSES_URL, parentOf, slugOf, slugify } from '../paths';
 import { api, type Course, type Me, type TreeFolder, type TreeNode } from './api';
 import { hydrateIcons, icon } from './icons';
@@ -270,6 +271,38 @@ async function newCourse(folder: string) {
 	titleInput.focus();
 }
 
+/**
+ * « Transformer en page de doc », depuis un sujet du forum (forum.babouins.fr/sujet/12) :
+ * l'éditeur s'ouvre avec un brouillon tiré de la solution (ou des réponses), qui cite le sujet.
+ * Le sujet parle d'une page : le brouillon s'ajoute à la fin de cette page, comme une section.
+ * Sinon : nouvelle page, dans le dossier du sujet. Rien n'est enregistré : on relit d'abord.
+ */
+async function importFromForum(topic: number) {
+	const response = await fetch(`${FORUM_URL}/api/brouillon/${topic}`).catch(() => null);
+	const draft = (await response?.json().catch(() => null)) as {
+		error?: string;
+		title: string;
+		body: string;
+		section: string;
+		doc: { id: string; kind: 'page' | 'folder' } | null;
+	} | null;
+	if (!response?.ok || !draft) throw new Error(draft?.error ?? 'Impossible de lire ce sujet sur le forum.');
+
+	if (draft.doc?.kind === 'page') {
+		await openCourse(draft.doc.id);
+		await editor.load(`${editor.getMarkdown().trimEnd()}
+
+${draft.section}`);
+	} else {
+		await newCourse(draft.doc?.kind === 'folder' ? draft.doc.id : '');
+		titleInput.value = draft.title;
+		slugInput.value = slugify(draft.title);
+		await editor.load(draft.body);
+	}
+	markDirty();
+	toast('Brouillon tiré du forum : relis-le et complète-le, puis enregistre.');
+}
+
 function closeDocument() {
 	current = null;
 	dirty = false;
@@ -509,6 +542,14 @@ window.addEventListener('beforeunload', (event) => {
 run(async () => {
 	await Promise.all([refreshMe(), refreshTree()]);
 	if (!me.local) run(refreshReviewsCount); // sans attendre : ce compteur ne bloque rien
-	const requested = new URL(location.href).searchParams.get('page');
-	if (requested) await openCourse(requested).catch(() => syncAddressBar());
+	const params = new URL(location.href).searchParams;
+	const requested = params.get('page');
+	const fromForum = Number(params.get('depuis-forum'));
+	if (Number.isInteger(fromForum) && fromForum > 0) {
+		// Le paramètre quitte l'adresse tout de suite : recharger la page ne doit pas réimporter le sujet.
+		const url = new URL(location.href);
+		url.searchParams.delete('depuis-forum');
+		history.replaceState(null, '', url);
+		await importFromForum(fromForum);
+	} else if (requested) await openCourse(requested).catch(() => syncAddressBar());
 });

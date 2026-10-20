@@ -8,8 +8,8 @@ Bienvenue sur le dépôt de [docs.babouins.fr](https://docs.babouins.fr), la doc
 | --- | --- |
 | [docs.babouins.fr](https://docs.babouins.fr) | Ce dépôt : la documentation |
 | [docs.babouins.fr/admin](https://docs.babouins.fr/admin) | Ce dépôt aussi : l'éditeur en ligne, pour écrire une page sans connaître Git |
+| [forum.babouins.fr](https://forum.babouins.fr) | Le forum : questions et échanges, reliés aux pages de la doc (projet séparé) |
 | [www.babouins.fr](https://www.babouins.fr) | La vitrine, le concept, le guide de contribution (projet séparé) |
-| [GitHub Discussions](https://github.com/Projet-Babouins/www.babouins.fr/discussions) | Les échanges entre contributeurs |
 
 ### 📚 Concept du projet
 
@@ -22,6 +22,7 @@ Bienvenue sur le dépôt de [docs.babouins.fr](https://docs.babouins.fr), la doc
 - **Collaboration** avec Git et les pull requests, pour qui veut pratiquer les outils du métier.
 - **Validation** de chaque page par deux personnes de la classe, depuis l'éditeur ou depuis GitHub.
 - **Mise à jour douce** : une page ouverte chez un lecteur se met à jour toute seule quand elle est corrigée.
+- **Le forum, relié à la doc** : en bas de chaque page, les questions posées sur [forum.babouins.fr](https://forum.babouins.fr) à son sujet ; la recherche montre aussi les sujets du forum ; une bonne réponse du forum devient une page en un clic (voir plus bas).
 
 ### 🛠️ Tutoriel sur les pull requests
 
@@ -155,7 +156,10 @@ Le site est fait avec [Starlight](https://starlight.astro.build), le thème de d
 │   ├── starlight-menu.ts         Applique _menu.json à la barre latérale du site
 │   ├── components/
 │   │   ├── Head.astro            <head> de Starlight + empreintes de la page (mise à jour douce)
-│   │   └── EditLink.astro        "Modifier cette page" : dans l'éditeur, ou sur GitHub
+│   │   ├── EditLink.astro        "Modifier cette page" : dans l'éditeur, ou sur GitHub
+│   │   ├── Footer.astro          Pied de page de Starlight + bloc "Questions sur cette page" (Questions.astro)
+│   │   ├── Search.astro          Recherche de Starlight + les sujets du forum sous les résultats
+│   │   └── SocialIcons.astro     Lien "Forum" dans l'en-tête
 │   ├── lib/
 │   │   ├── build-id.ts           Identifiant du build en cours
 │   │   ├── live-update.ts        Mise à jour douce des pages ouvertes (navigateur)
@@ -183,6 +187,7 @@ Le site est fait avec [Starlight](https://starlight.astro.build), le thème de d
 │   │           └── icons.ts
 │   ├── pages/
 │   │   ├── version.json.ts       Fichier statique { build } : "le site a-t-il été reconstruit ?"
+│   │   ├── pages.json.ts         Index de la doc (menu, titres, textes), lu par le forum
 │   │   ├── admin/                index.astro (coquille de l'éditeur), login.ts, callback.ts, logout.ts
 │   │   └── api/admin/            tree, course, folder, move, upload, media, me, proposals
 │   └── styles/
@@ -241,6 +246,20 @@ Si un cache est placé devant le site, `/version.json` et les pages HTML ne doiv
 - **Vie privée** : les commits sont signés avec l'adresse "noreply" du compte GitHub, pas avec la vraie adresse e-mail de l'étudiant.
 - **Images** : PNG, JPEG, WebP, format lu dans le contenu du fichier, métadonnées (dont la position GPS) retirées. Pas de SVG.
 - **Aucun texte saisi n'est injecté comme du HTML** dans l'éditeur. En revanche, le HTML écrit dans une page est publié tel quel sur le site, comme s'il avait été poussé avec Git : c'est aussi pour ça que chaque page est relue.
+
+### 💬 Le lien avec le forum
+
+Le forum ([dépôt forum.babouins.fr](https://github.com/Projet-Babouins/forum.babouins.fr)) est fait des GitHub Discussions du projet. Les deux sites se parlent par des fichiers publics, sans rien partager d'autre :
+
+| La doc → le forum | Le forum → la doc |
+| --- | --- |
+| `/pages.json`, fabriqué au build : le menu, le titre et le texte de chaque page. Le forum s'en sert pour ses thèmes et pour la recherche commune | `/api/sujets?doc=…` : les questions d'une page (bloc en bas de page) |
+| | `/api/recherche?q=…` : les sujets qui répondent à une recherche (fenêtre de recherche) |
+| | `/api/brouillon/<n>` : un brouillon de page tiré d'un sujet |
+
+« Transformer en page de doc », sur un sujet du forum, ouvre `/admin?depuis-forum=<n>` : l'éditeur lit le brouillon, l'ajoute à la fin de la page dont parle le sujet (ou crée une nouvelle page dans son dossier) et ne l'enregistre pas. La personne relit, complète, enregistre : c'est une proposition comme une autre, avec ses deux validations.
+
+L'adresse du forum est `FORUM_URL` (par défaut `https://forum.babouins.fr`, à mettre à `http://localhost:4322` dans `.env` pour développer les deux ensemble). Si le forum ne répond pas, la doc n'en souffre pas : le bloc garde son lien "Poser une question", la recherche ne montre que la doc.
 
 ## 📄 Licences
 

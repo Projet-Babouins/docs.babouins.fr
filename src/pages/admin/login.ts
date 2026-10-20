@@ -20,7 +20,9 @@ export const GET: APIRoute = async ({ session, redirect, url }) => {
 		});
 		const openPage = await session?.get('openPage'); // page demandée avant la connexion (voir middleware.ts)
 		session?.delete('openPage');
-		return redirect(adminUrl(openPage));
+		const openForumTopic = await session?.get('openForumTopic');
+		session?.delete('openForumTopic');
+		return redirect(adminUrl(openPage, openForumTopic));
 	}
 
 	if (!isOAuthConfigured()) {
