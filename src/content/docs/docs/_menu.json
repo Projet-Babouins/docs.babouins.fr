@@ -15,6 +15,18 @@
 					"slug": "linux",
 					"label": "Linux",
 					"items": []
+				},
+				{
+					"type": "folder",
+					"slug": "reseau",
+					"label": "Réseau",
+					"items": [
+						{
+							"type": "course",
+							"slug": "commandes-cisco-switch-routeur",
+							"title": "Commandes Cisco : switch et routeur"
+						}
+					]
 				}
 			]
 		}
